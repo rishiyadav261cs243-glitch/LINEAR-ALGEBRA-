@@ -36,6 +36,8 @@ textarea{width:100%;font:16px Georgia,serif;background:var(--bg);color:var(--ink
 button:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 </style></head><body><main id="app"></main>
 <script src="problems1.js"></script>
+<script src="problems2.js"></script>
+<script src="chapter2.js"></script>
 <script>
 const CH=typeof P1!=="undefined"?P1:[];
 const SEC=[
@@ -103,49 +105,60 @@ const QZ=[["A consistent system with fewer equations than unknowns has…",["Exa
 const SB=[["Prove that a linear system cannot have exactly two solutions.","Let u ≠ v be solutions. For any t, w = u + t(v − u) satisfies every equation a·x = b because a·w = b + t(b − b) = b. Different t give different w, so there are infinitely many solutions. Hence a system with two solutions has infinitely many."],
 ["Solve x₁ + x₂ − x₃ = 2 and 2x₁ + 2x₂ + x₃ = 7. Write the answer in parametric vector form.","R2 − 2R1 gives 3x₃ = 3, so x₃ = 1. Then x₁ + x₂ = 3. With x₂ = s: x = (3,0,1) + s(−1,1,0)."],
 ["If {v₁, v₂} is independent and v₃ is not in Span{v₁, v₂}, prove {v₁, v₂, v₃} is independent.","Suppose c₁v₁ + c₂v₂ + c₃v₃ = 0. If c₃ ≠ 0 then v₃ = −(c₁/c₃)v₁ − (c₂/c₃)v₂ is in the span, a contradiction. So c₃ = 0, leaving c₁v₁ + c₂v₂ = 0, and independence gives c₁ = c₂ = 0."]];
-let S={read:{},best:null};try{const r=localStorage.getItem("la1");if(r)S=JSON.parse(r)}catch(e){}
+const CHS=[{n:1,title:"Linear equations in linear algebra",sec:SEC,pr:PR,pb:CH,qz:QZ,sb:SB}];
+["C2","C3","C4","C5","C6","C7"].forEach(k=>{if(window[k])CHS.push(window[k])});
+let S={read:{},best:{}};try{const r=localStorage.getItem("la1");if(r)S=JSON.parse(r)}catch(e){}
+if(!S.read)S.read={};
+if(typeof S.best!=="object"||S.best===null)S.best=S.best==null?{}:{1:S.best};
+Object.keys(S.read).forEach(k=>{if(k.indexOf("-")<0){S.read["1-"+k]=S.read[k];delete S.read[k]}});
 const save=()=>{try{localStorage.setItem("la1",JSON.stringify(S))}catch(e){}};
-const app=document.getElementById("app");let dp=null;
+const app=document.getElementById("app");let dp=null,cur=CHS[0];
+const rk=i=>cur.n+"-"+i;
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;const b=document.getElementById("inst");if(b)b.hidden=false});
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 function home(){
- const n=SEC.filter((s,i)=>S.read[i]).length;
- app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">Chapter 1 · Linear equations in linear algebra</p>
- <div class="bar"><i style="width:${n/SEC.length*100}%"></i></div><p class="sub">${n} of ${SEC.length} sections read${S.best!=null?" · best test score "+S.best+"/20":""}</p>
- <button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button>`+
- SEC.map((s,i)=>`<button class="row" data-s="${i}"><span class="dot ${S.read[i]?"ok":""}">${S.read[i]?"✓":""}</span><span><span class="tt">${s[0]}</span><small>${s[1]}</small></span></button>`).join("")+
- `<button class="row" id="pr"><span class="dot"></span><span><span class="tt">Practice problems</span><small>${PR.length} worked examples${CH.length?" + "+CH.length+" challenge problems":""}</small></span></button>
- <button class="row" id="ts"><span class="dot ${S.best!=null?"ok":""}">${S.best!=null?"✓":""}</span><span><span class="tt">Chapter test</span><small>20 marks: quiz 40% and subjective 60%</small></span></button>`;
- app.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>sec(+b.dataset.s));
- document.getElementById("pr").onclick=prac;document.getElementById("ts").onclick=test;
+ app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button>`+
+ CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
+ (CHS.length<7?`<p class="sub">Chapters ${CHS.length+1} to 7 are coming soon.</p>`:"");
+ app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>chap(CHS[+b.dataset.c]));
  const ib=document.getElementById("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}};
  scrollTo(0,0)}
-function sec(i){
- const s=SEC[i];
- app.innerHTML=`<button class="back" id="bk">‹ Chapter 1</button><h2>${s[0]}</h2>${s[2]}<button class="btn" id="mk">${S.read[i]?"Marked as read ✓":"Mark as read"}</button>${i<SEC.length-1?'<button class="btn alt" id="nx">Next section</button>':""}`;
+function chap(c){
+ cur=c;const n=c.sec.filter((s,i)=>S.read[rk(i)]).length,b=S.best[c.n];
+ app.innerHTML=`<button class="back" id="bk">‹ All chapters</button><h1>Chapter ${c.n}</h1><p class="sub">${c.title}</p>
+ <div class="bar"><i style="width:${n/c.sec.length*100}%"></i></div><p class="sub">${n} of ${c.sec.length} sections read${b!=null?" · best test score "+b+"/20":""}</p>`+
+ c.sec.map((s,i)=>`<button class="row" data-s="${i}"><span class="dot ${S.read[rk(i)]?"ok":""}">${S.read[rk(i)]?"✓":""}</span><span><span class="tt">${s[0]}</span><small>${s[1]}</small></span></button>`).join("")+
+ `<button class="row" id="pr"><span class="dot"></span><span><span class="tt">Practice problems</span><small>${c.pr.length} worked examples${c.pb.length?" + "+c.pb.length+" challenge problems":""}</small></span></button>
+ <button class="row" id="ts"><span class="dot ${b!=null?"ok":""}">${b!=null?"✓":""}</span><span><span class="tt">Chapter test</span><small>20 marks: quiz 40% and subjective 60%</small></span></button>`;
  document.getElementById("bk").onclick=home;
- document.getElementById("mk").onclick=e=>{S.read[i]=!S.read[i];save();e.target.textContent=S.read[i]?"Marked as read ✓":"Mark as read"};
+ app.querySelectorAll("[data-s]").forEach(x=>x.onclick=()=>sec(+x.dataset.s));
+ document.getElementById("pr").onclick=prac;document.getElementById("ts").onclick=test;scrollTo(0,0)}
+function sec(i){
+ const s=cur.sec[i];
+ app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>${s[0]}</h2>${s[2]}<button class="btn" id="mk">${S.read[rk(i)]?"Marked as read ✓":"Mark as read"}</button>${i<cur.sec.length-1?'<button class="btn alt" id="nx">Next section</button>':""}`;
+ document.getElementById("bk").onclick=()=>chap(cur);
+ document.getElementById("mk").onclick=e=>{S.read[rk(i)]=!S.read[rk(i)];save();e.target.textContent=S.read[rk(i)]?"Marked as read ✓":"Mark as read"};
  const nx=document.getElementById("nx");if(nx)nx.onclick=()=>sec(i+1);scrollTo(0,0)}
 function prac(){
  const tg={Standard:"var(--mute)",Hard:"var(--hi)",Proof:"var(--acc)"};
- app.innerHTML=`<button class="back" id="bk">‹ Chapter 1</button><h2>Practice problems</h2><h3>Worked examples</h3><p class="sub">Try on paper first, then open the solution.</p>`+
- PR.map((p,i)=>`<div class="card"><b>${i+1}. ${p[0]}</b><details><summary>Solution</summary><div class="ans">${p[1]}</div></details></div>`).join("")+
- (CH.length?`<h3>Challenge set · ${CH.length} problems</h3><p class="sub">Standard, Hard and Proof problems. Solutions are not included yet.</p>`+
- CH.map((p,i)=>`<div class="card"><span class="tt" style="font-size:12.5px;font-weight:700;color:${tg[p[0]]}">${p[0]}</span><br><b>${i+1}. ${p[1]}</b></div>`).join(""):"");
- document.getElementById("bk").onclick=home;scrollTo(0,0)}
+ app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>Practice problems</h2><h3>Worked examples</h3><p class="sub">Try on paper first, then open the solution.</p>`+
+ cur.pr.map((p,i)=>`<div class="card"><b>${i+1}. ${p[0]}</b><details><summary>Solution</summary><div class="ans">${p[1]}</div></details></div>`).join("")+
+ (cur.pb.length?`<h3>Challenge set · ${cur.pb.length} problems</h3><p class="sub">Standard, Hard and Proof problems. Solutions are not included yet.</p>`+
+ cur.pb.map((p,i)=>`<div class="card"><span class="tt" style="font-size:12.5px;font-weight:700;color:${tg[p[0]]}">${p[0]}</span><br><b>${i+1}. ${p[1]}</b></div>`).join(""):"");
+ document.getElementById("bk").onclick=()=>chap(cur);scrollTo(0,0)}
 function test(){
- let q=[-1,-1,-1,-1],m=[-1,-1,-1],fin=false;
- app.innerHTML=`<button class="back" id="bk">‹ Chapter 1</button><h2>Chapter 1 test</h2><p class="sub">20 marks. Part A quiz: 8 marks (40%). Part B subjective: 12 marks (60%).</p><h3>Part A · Quiz (2 marks each)</h3>`+
+ const QZ=cur.qz,SB=cur.sb;let q=QZ.map(()=>-1),m=SB.map(()=>-1),fin=false;
+ app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>Chapter ${cur.n} test</h2><p class="sub">20 marks. Part A quiz: 8 marks (40%). Part B subjective: 12 marks (60%).</p><h3>Part A · Quiz (2 marks each)</h3>`+
  QZ.map((x,i)=>`<div class="card"><b>${i+1}. ${x[0]}</b>${x[1].map((o,k)=>`<button class="opt" data-q="${i}" data-k="${k}">${o}</button>`).join("")}</div>`).join("")+
  `<h3>Part B · Subjective (4 marks each)</h3>`+
  SB.map((x,i)=>`<div class="card"><b>${i+1}. ${x[0]}</b><textarea rows="4" placeholder="Write your answer here or on paper"></textarea><details><summary>Model answer</summary><div class="ans">${x[1]}</div></details><div>Marks you award yourself:</div>${[0,1,2,3,4].map(k=>`<button class="mk" data-m="${i}" data-k="${k}">${k}</button>`).join("")}</div>`).join("")+
  `<button class="btn" id="fn">Finish test</button><div id="res"></div>`;
- document.getElementById("bk").onclick=home;
+ document.getElementById("bk").onclick=()=>chap(cur);
  app.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{if(fin)return;const i=+b.dataset.q;q[i]=+b.dataset.k;app.querySelectorAll(`[data-q="${i}"]`).forEach(x=>x.classList.toggle("sel",x===b))});
  app.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const i=+b.dataset.m;m[i]=+b.dataset.k;app.querySelectorAll(`[data-m="${i}"]`).forEach(x=>x.classList.toggle("sel",x===b))});
  document.getElementById("fn").onclick=()=>{
   fin=true;let a=0;QZ.forEach((x,i)=>{if(q[i]==x[2])a+=2;app.querySelectorAll(`[data-q="${i}"]`).forEach(o=>{if(+o.dataset.k==x[2])o.classList.add("good");else if(o.classList.contains("sel"))o.classList.add("wrong")})});
-  const b=m.reduce((s,v)=>s+Math.max(v,0),0),t=a+b;S.best=Math.max(S.best||0,t);save();
+  const b=m.reduce((s,v)=>s+Math.max(v,0),0),t=a+b;S.best[cur.n]=Math.max(S.best[cur.n]||0,t);save();
   const r=document.getElementById("res");r.innerHTML=`<div class="card"><div class="score">${t} / 20</div><p>Quiz ${a}/8 · Subjective ${b}/12${m.includes(-1)?"<br>Award yourself marks for every subjective answer to complete your score.":""}</p></div>`;r.scrollIntoView({behavior:"smooth"})};
  scrollTo(0,0)}
 home();
