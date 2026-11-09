@@ -1,7 +1,7 @@
-const CACHE = "linalg-v8";
+const CACHE = "linalg-v9";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
   "./problems1.js", "./problems2.js", "./problems3.js", "./problems4.js", "./problems5.js", "./problems6.js", "./problems7.js",
-  "./chapter2.js", "./chapter3.js", "./chapter4.js", "./chapter5.js", "./chapter6.js"];
+  "./chapter2.js", "./chapter3.js", "./chapter4.js", "./chapter5.js", "./chapter6.js", "./chapter7.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => c.add(new Request(f, {cache: "reload"})).catch(() => {})))));
   self.skipWaiting();
