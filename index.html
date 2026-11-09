@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Linear Algebra · B.Tech Sem 1</title>
+<title>Linear algebra for engineers</title>
 <meta name="theme-color" content="#14213D">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -34,6 +34,16 @@ details{background:var(--card);border:1px solid var(--line);border-radius:10px;p
 textarea{width:100%;font:16px Georgia,serif;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px}
 .score{font:700 40px system-ui;margin:4px 0}
 button:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.cover{background:#14213D;color:#E8EEFA;border-radius:16px;min-height:calc(100vh - 110px);padding:28px 22px 22px;display:flex;flex-direction:column;justify-content:space-between;gap:20px}
+.cover .rule{width:60px;height:4px;background:#F4B73F;margin-bottom:20px}
+.cover h1.ct{color:#fff;font-size:34px;line-height:1.15;margin:0 0 16px}
+.cover .ca{font:600 21px system-ui,sans-serif;margin:0;color:#fff}
+.cover .cs{color:#B8C6E6;margin:2px 0 0;font:15px system-ui,sans-serif}
+.cover .cm{display:grid;grid-template-columns:repeat(3,38px);gap:4px;padding:8px 12px;border-left:3px solid #E8EEFA;border-right:3px solid #E8EEFA;border-radius:6px;align-self:center;font:700 18px system-ui,sans-serif;text-align:center}
+.cover .cm i{font-style:normal;color:#5F78A8}.cover .cm i.on{color:#F4B73F}
+.cover .cq{font-style:italic;text-align:center;color:#D5DEF3;margin:0;padding:0 6px}
+.cover .btn{background:#F4B73F;color:#14213D;align-self:center;margin:0}
+.cover .cf{text-align:center;color:#B8C6E6;font:13px/1.4 system-ui,sans-serif;margin:0;border-top:1px solid #2B3A5E;padding-top:14px}
 </style></head><body><main id="app"></main>
 <script src="problems1.js"></script>
 <script src="problems2.js"></script>
@@ -126,6 +136,14 @@ const app=document.getElementById("app");let dp=null,cur=CHS[0];
 const rk=i=>cur.n+"-"+i;
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;const b=document.getElementById("inst");if(b)b.hidden=false});
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+function cover(){
+ let m="";for(let r=0;r<3;r++)for(let c=0;c<3;c++)m+=`<i class="${r==c?"on":""}">${r==c?1:0}</i>`;
+ app.innerHTML=`<div class="cover"><div><div class="rule"></div><h1 class="ct">Linear algebra<br>for engineers</h1><p class="ca">Rishi Yadav</p><p class="cs">Student at NITK</p></div>
+ <div class="cm" aria-hidden="true">${m}</div>
+ <p class="cq">“Every hard problem becomes simpler once you find the right basis.”</p>
+ <button class="btn" id="open">Open the book</button>
+ <p class="cf">National Institute of Technology Karnataka, Surathkal</p></div>`;
+ document.getElementById("open").onclick=home;scrollTo(0,0)}
 function home(){
  app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button>`+
  CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
@@ -171,5 +189,5 @@ function test(){
   const b=m.reduce((s,v)=>s+Math.max(v,0),0),t=a+b;S.best[cur.n]=Math.max(S.best[cur.n]||0,t);save();
   const r=document.getElementById("res");r.innerHTML=`<div class="card"><div class="score">${t} / 20</div><p>Quiz ${a}/8 · Subjective ${b}/12${m.includes(-1)?"<br>Award yourself marks for every subjective answer to complete your score.":""}</p></div>`;r.scrollIntoView({behavior:"smooth"})};
  scrollTo(0,0)}
-home();
+cover();
 </script></body></html>
