@@ -44,6 +44,9 @@ button:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-
 .cover .cq{font-style:italic;text-align:center;color:#D5DEF3;margin:0;padding:0 6px}
 .cover .btn{background:#F4B73F;color:#14213D;align-self:center;margin:0}
 .cover .cf{text-align:center;color:#B8C6E6;font:13px/1.4 system-ui,sans-serif;margin:0;border-top:1px solid #2B3A5E;padding-top:14px}
+input[type=text],input[type=search]{width:100%;font:16px system-ui,sans-serif;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px}
+mark{background:var(--hi);color:#14213D;border-radius:3px;padding:0 2px}
+.tools .btn{margin:0 8px 10px 0;padding:9px 14px;font-size:14px}
 </style></head><body><main id="app"></main>
 <script src="problems1.js"></script>
 <script src="problems2.js"></script>
@@ -129,6 +132,7 @@ const CHS=[{n:1,title:"Linear equations in linear algebra",sec:SEC,pr:PR,pb:CH,q
 ["C2","C3","C4","C5","C6","C7"].forEach(k=>{if(window[k])CHS.push(window[k])});
 let S={read:{},best:{}};try{const r=localStorage.getItem("la1");if(r)S=JSON.parse(r)}catch(e){}
 if(!S.read)S.read={};
+S.bm=S.bm||{};S.notes=S.notes||{};S.pref=S.pref||{theme:"auto",size:100};
 if(typeof S.best!=="object"||S.best===null)S.best=S.best==null?{}:{1:S.best};
 Object.keys(S.read).forEach(k=>{if(k.indexOf("-")<0){S.read["1-"+k]=S.read[k];delete S.read[k]}});
 const save=()=>{try{localStorage.setItem("la1",JSON.stringify(S))}catch(e){}};
@@ -136,6 +140,52 @@ const app=document.getElementById("app");let dp=null,cur=CHS[0];
 const rk=i=>cur.n+"-"+i;
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;const b=document.getElementById("inst");if(b)b.hidden=false});
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function applyPref(){const p=S.pref,r=document.documentElement;
+ if(r){if(p.theme=="auto")r.removeAttribute("data-theme");else r.setAttribute("data-theme",p.theme)}
+ if(document.body)document.body.style.fontSize=(17*p.size/100)+"px"}
+function settings(){
+ const p=S.pref;
+ app.innerHTML=`<button class="back" id="bk">‹ Home</button><h2>Settings</h2><h3>Theme</h3>
+ ${[["auto","Match phone"],["light","Light"],["dark","Dark"]].map(t=>`<button class="mk ${p.theme==t[0]?"sel":""}" style="width:auto;padding:0 14px" data-t="${t[0]}">${t[1]}</button>`).join("")}
+ <h3>Text size</h3><button class="mk" id="sm">A−</button><button class="mk" id="lg">A+</button><button class="mk" id="rs" style="width:auto;padding:0 14px">Reset</button>
+ <p class="sub" id="sz">Current size: ${p.size}%</p><div class="card"><b>Preview</b><p>If a vector is a combination of the columns of A, then Ax = b has a solution.</p></div>`;
+ $("bk").onclick=home;
+ app.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{p.theme=b.dataset.t;save();applyPref();settings()});
+ const sz=n=>{p.size=Math.max(80,Math.min(150,n));save();applyPref();settings()};
+ $("sm").onclick=()=>sz(p.size-10);$("lg").onclick=()=>sz(p.size+10);$("rs").onclick=()=>sz(100)}
+function saved(){
+ const it=[];CHS.forEach(c=>c.sec.forEach((s,i)=>{const k=c.n+"-"+i;if(S.bm[k]||S.notes[k])it.push({c,i,s,k})}));
+ app.innerHTML=`<button class="back" id="bk">‹ Home</button><h2>Bookmarks and notes</h2>`+
+ (it.length?it.map((x,j)=>`<button class="row" data-j="${j}"><span class="dot ${S.bm[x.k]?"ok":""}">${S.bm[x.k]?"★":"✎"}</span><span><span class="tt">${esc(x.s[0])}</span><small>Chapter ${x.c.n}${S.notes[x.k]?" · "+esc(S.notes[x.k].slice(0,90)):""}</small></span></button>`).join(""):`<p class="sub">Nothing saved yet. Open a section, then tap Bookmark or write a note at the bottom.</p>`);
+ $("bk").onclick=home;
+ app.querySelectorAll("[data-j]").forEach(b=>b.onclick=()=>{const x=it[+b.dataset.j];cur=x.c;sec(x.i)});scrollTo(0,0)}
+const plain=h=>h.replace(/<[^>]+>/g," ").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&[a-z#0-9]+;/gi," ").replace(/\s+/g," ").trim();
+let IDX=null,HITS=[];
+function buildIdx(){IDX=[];CHS.forEach(c=>{
+ c.sec.forEach((s,i)=>IDX.push({c,kind:"Section",i,title:s[0],text:plain(s[2])}));
+ c.pr.forEach((p,i)=>IDX.push({c,kind:"Worked example",i,title:"Worked example "+(i+1),text:p[0]+" "+p[1]}));
+ c.pb.forEach((p,i)=>IDX.push({c,kind:p[0]+" problem",i,title:"Problem "+(i+1),text:p[1]}))})}
+function find(q){
+ if(!IDX)buildIdx();
+ const terms=q.toLowerCase().split(/\s+/).filter(Boolean);if(!terms.length)return[];
+ return IDX.map(d=>{const t=d.text.toLowerCase(),ti=d.title.toLowerCase();let sc=0;
+  for(const w of terms){const n=t.split(w).length-1,m=ti.includes(w);if(!n&&!m)return null;sc+=Math.min(n,5)+(m?6:0)}
+  const pos=t.indexOf(terms[0]);return{d,sc,pos:Math.max(0,pos)}}).filter(Boolean).sort((a,b)=>b.sc-a.sc).slice(0,40)}
+function hl(t,terms){const re=new RegExp("("+terms.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")","ig");
+ return t.split(re).map((p,i)=>i%2?`<mark>${esc(p)}</mark>`:esc(p)).join("")}
+function searchView(){
+ app.innerHTML=`<button class="back" id="bk">‹ Home</button><h2>Search</h2><input type="search" id="sq" placeholder="Search all chapters, e.g. eigenvalue" autocomplete="off"><div id="sr"><p class="sub">Type a word or two. Results come from the notes, worked examples and challenge problems.</p></div>`;
+ $("bk").onclick=home;
+ const run=()=>{const q=$("sq").value.trim(),terms=q.toLowerCase().split(/\s+/).filter(Boolean);
+  if(!terms.length){$("sr").innerHTML=`<p class="sub">Type a word or two.</p>`;return}
+  HITS=find(q);
+  $("sr").innerHTML=HITS.length?`<p class="sub">${HITS.length}${HITS.length==40?"+":""} result(s)</p>`+HITS.map((h,j)=>{const t=h.d.text,st=Math.max(0,h.pos-50),sn=(st?"…":"")+t.slice(st,st+150)+(st+150<t.length?"…":"");
+   return `<button class="row" data-r="${j}"><span><span class="tt">${esc(h.d.title)}</span><small>Chapter ${h.d.c.n} · ${h.d.kind}</small><small>${hl(sn,terms)}</small></span></button>`}).join(""):`<p class="sub">No results for “${esc(q)}”. Try a shorter word.</p>`};
+ $("sq").oninput=run;
+ $("sr").onclick=e=>{const b=e.target.closest&&e.target.closest("[data-r]");if(!b)return;const h=HITS[+b.dataset.r];cur=h.d.c;if(h.d.kind=="Section")sec(h.d.i);else prac()};
+ $("sq").focus&&$("sq").focus()}
 function cover(){
  let m="";for(let r=0;r<3;r++)for(let c=0;c<3;c++)m+=`<i class="${r==c?"on":""}">${r==c?1:0}</i>`;
  app.innerHTML=`<div class="cover"><div><div class="rule"></div><h1 class="ct">Linear algebra<br>for engineers</h1><p class="ca">Rishi Yadav</p><p class="cs">Student at NITK</p></div>
@@ -145,30 +195,35 @@ function cover(){
  <p class="cf">National Institute of Technology Karnataka, Surathkal</p></div>`;
  document.getElementById("open").onclick=home;scrollTo(0,0)}
 function home(){
- app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button>`+
+ app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button><div class="tools"><button class="btn alt" id="tsr">Search</button><button class="btn alt" id="tsv">Saved</button><button class="btn alt" id="tst">Settings</button></div>`+
  CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
  `<button class="row" id="lq"><span class="dot"></span><span><span class="tt">Live quiz</span><small>Host or join a class quiz (needs internet)</small></span></button>`+
  (CHS.length<7?`<p class="sub">Chapters ${CHS.length+1} to 7 are coming soon.</p>`:"");
  app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>chap(CHS[+b.dataset.c]));
  document.getElementById("lq").onclick=()=>{location.href="quiz.html"};
+ document.getElementById("tsr").onclick=searchView;document.getElementById("tsv").onclick=saved;document.getElementById("tst").onclick=settings;
  const ib=document.getElementById("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}};
  scrollTo(0,0)}
 function chap(c){
  cur=c;const n=c.sec.filter((s,i)=>S.read[rk(i)]).length,b=S.best[c.n];
  app.innerHTML=`<button class="back" id="bk">‹ All chapters</button><h1>Chapter ${c.n}</h1><p class="sub">${c.title}</p>
  <div class="bar"><i style="width:${n/c.sec.length*100}%"></i></div><p class="sub">${n} of ${c.sec.length} sections read${b!=null?" · best test score "+b+"/20":""}</p>`+
- c.sec.map((s,i)=>`<button class="row" data-s="${i}"><span class="dot ${S.read[rk(i)]?"ok":""}">${S.read[rk(i)]?"✓":""}</span><span><span class="tt">${s[0]}</span><small>${s[1]}</small></span></button>`).join("")+
+ c.sec.map((s,i)=>`<button class="row" data-s="${i}"><span class="dot ${S.read[rk(i)]?"ok":""}">${S.read[rk(i)]?"✓":""}</span><span><span class="tt">${s[0]}${S.bm[rk(i)]?" ★":""}${S.notes[rk(i)]?" ✎":""}</span><small>${s[1]}</small></span></button>`).join("")+
  `<button class="row" id="pr"><span class="dot"></span><span><span class="tt">Practice problems</span><small>${c.pr.length} worked examples${c.pb.length?" + "+c.pb.length+" challenge problems":""}</small></span></button>
  <button class="row" id="ts"><span class="dot ${b!=null?"ok":""}">${b!=null?"✓":""}</span><span><span class="tt">Chapter test</span><small>20 marks: quiz 40% and subjective 60%</small></span></button>`;
  document.getElementById("bk").onclick=home;
  app.querySelectorAll("[data-s]").forEach(x=>x.onclick=()=>sec(+x.dataset.s));
  document.getElementById("pr").onclick=prac;document.getElementById("ts").onclick=test;scrollTo(0,0)}
 function sec(i){
- const s=cur.sec[i];
- app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>${s[0]}</h2>${s[2]}<button class="btn" id="mk">${S.read[rk(i)]?"Marked as read ✓":"Mark as read"}</button>${i<cur.sec.length-1?'<button class="btn alt" id="nx">Next section</button>':""}`;
- document.getElementById("bk").onclick=()=>chap(cur);
- document.getElementById("mk").onclick=e=>{S.read[rk(i)]=!S.read[rk(i)];save();e.target.textContent=S.read[rk(i)]?"Marked as read ✓":"Mark as read"};
- const nx=document.getElementById("nx");if(nx)nx.onclick=()=>sec(i+1);scrollTo(0,0)}
+ const s=cur.sec[i],k=rk(i);
+ app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>${s[0]}</h2>${s[2]}
+ <h3>My note</h3><textarea id="nt" rows="4" placeholder="Write your own note for this section…">${esc(S.notes[k]||"")}</textarea>
+ <button class="btn" id="mk">${S.read[k]?"Marked as read ✓":"Mark as read"}</button><button class="btn alt" id="bmk">${S.bm[k]?"★ Bookmarked":"☆ Bookmark"}</button>${i<cur.sec.length-1?'<button class="btn alt" id="nx">Next section</button>':""}`;
+ $("bk").onclick=()=>chap(cur);
+ $("mk").onclick=e=>{S.read[k]=!S.read[k];save();e.target.textContent=S.read[k]?"Marked as read ✓":"Mark as read"};
+ $("bmk").onclick=e=>{S.bm[k]=!S.bm[k];if(!S.bm[k])delete S.bm[k];save();e.target.textContent=S.bm[k]?"★ Bookmarked":"☆ Bookmark"};
+ $("nt").oninput=e=>{const v=e.target.value;if(v.trim())S.notes[k]=v;else delete S.notes[k];save()};
+ const nx=$("nx");if(nx)nx.onclick=()=>sec(i+1);scrollTo(0,0)}
 function prac(){
  const tg={Standard:"var(--mute)",Hard:"var(--hi)",Proof:"var(--acc)"};
  app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>Practice problems</h2><h3>Worked examples</h3><p class="sub">Try on paper first, then open the solution.</p>`+
@@ -191,5 +246,5 @@ function test(){
   const b=m.reduce((s,v)=>s+Math.max(v,0),0),t=a+b;S.best[cur.n]=Math.max(S.best[cur.n]||0,t);save();
   const r=document.getElementById("res");r.innerHTML=`<div class="card"><div class="score">${t} / 20</div><p>Quiz ${a}/8 · Subjective ${b}/12${m.includes(-1)?"<br>Award yourself marks for every subjective answer to complete your score.":""}</p></div>`;r.scrollIntoView({behavior:"smooth"})};
  scrollTo(0,0)}
-cover();
+applyPref();cover();
 </script></body></html>
