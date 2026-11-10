@@ -154,7 +154,7 @@ function listen(){
  ref=db.ref("rooms/"+code);
  ref.on("value",s=>{R=s.val();render()});
  clearInterval(tick);tick=setInterval(loop,300)}
-const plist=()=>Object.entries((R&&R.players)||{}).map(([id,p])=>({id,...p})).sort((a,b)=>(b.score||0)-(a.score||0));
+const plist=()=>Object.entries((R&&R.players)||{}).map(([id,p])=>({id,...p})).sort((a,b)=>(b.right||0)-(a.right||0)||(b.score||0)-(a.score||0));
 function loop(){
  if(!R)return;
  const el=$("tm");if(el&&R.state=="q")el.textContent=Math.max(0,Math.ceil((R.limit*1000-(now()-R.qStart))/1000));
@@ -166,7 +166,7 @@ function reveal(){
  const qi=R.qi,q=R.qs[qi],lim=R.limit*1000,A=(R.ans&&R.ans[qi])||{},u={};
  Object.entries(R.players||{}).forEach(([id,p])=>{const a=A[id];let pts=0,ok=false;
   if(a&&a.c==q.a){ok=true;pts=Math.round(1000*(1-Math.min(a.t,lim)/lim/2))}
-  u["players/"+id+"/score"]=(p.score||0)+pts;u["players/"+id+"/last"]=pts;u["players/"+id+"/ok"]=ok;u["players/"+id+"/pick"]=a?a.c:-1});
+  u["players/"+id+"/score"]=(p.score||0)+pts;u["players/"+id+"/right"]=(p.right||0)+(ok?1:0);u["players/"+id+"/last"]=pts;u["players/"+id+"/ok"]=ok;u["players/"+id+"/pick"]=a?a.c:-1});
  u.state="reveal";ref.update(u).then(()=>{busy=false}).catch(()=>{busy=false})}
 function next(){
  if(R.qi+1<R.qs.length)ref.update({state:"q",qi:R.qi+1,qStart:firebase.database.ServerValue.TIMESTAMP});
@@ -177,7 +177,7 @@ function answer(k){
 function render(){
  if(!R){app.innerHTML=`<h2>Game ended</h2><p class="sub">This game is over or the code is no longer valid.</p><button class="btn" id="hm">Back to start</button>`;$("hm").onclick=home;return}
  role=="host"?hostView():playerView();loop()}
-function lb(P,n){return `<ol class="lb">${P.slice(0,n).map(p=>`<li><span>${esc(p.name)}</span><b>${p.score||0}</b></li>`).join("")}</ol>`}
+function lb(P,n){const tot=R.state=="final"?R.qs.length:R.qi+1;return `<ol class="lb">${P.slice(0,n).map(p=>`<li><span>${esc(p.name)}</span><b>${p.right||0} / ${tot} correct</b></li>`).join("")}</ol>`}
 function qhead(){return `<div class="top"><span>Question ${R.qi+1} of ${R.qs.length}</span><span class="tm" id="tm">${R.limit}</span></div><p class="q">${esc(R.qs[R.qi].q)}</p>`}
 function hostView(){
  const P=plist(),q=R.qs[R.qi]||{},A=(R.ans&&R.ans[R.qi])||{};
@@ -201,7 +201,7 @@ function hostView(){
   $("nx").onclick=next}
  else{
   const t=P.slice(0,3);
-  app.innerHTML=`<h1 class="c">Final results</h1><div class="pod">${[1,0,2].filter(i=>t[i]).map(i=>`<div class="p${i+1}"><b>${["1st","2nd","3rd"][i]}</b><br>${esc(t[i].name)}<br><b>${t[i].score||0}</b></div>`).join("")}</div>${lb(P,10)}
+  app.innerHTML=`<h1 class="c">Final results</h1><div class="pod">${[1,0,2].filter(i=>t[i]).map(i=>`<div class="p${i+1}"><b>${["1st","2nd","3rd"][i]}</b><br>${esc(t[i].name)}<br><b>${t[i].right||0} / ${R.qs.length} correct</b></div>`).join("")}</div>${lb(P,10)}
   <button class="btn" id="dn">End and delete game</button>`;
   $("dn").onclick=()=>{const r=ref;clear();r.remove();home()}}}
 function playerView(){
@@ -215,8 +215,8 @@ function playerView(){
    app.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>answer(+b.dataset.k))}}
  else if(R.state=="reveal")app.innerHTML=`<p class="sub">Question ${qi+1} of ${R.qs.length}</p><div class="res ${me.ok?"ok":"bad"}">${me.ok?"Correct":me.pick<0?"Out of time":"Wrong"}</div>
   <div class="card c"><p class="sub">Correct answer</p><b>${L[q.a]}. ${esc(q.o[q.a])}</b></div>
-  <div class="card c"><p class="sub">You scored</p><div class="tm">+${me.last||0}</div><p>Total ${me.score||0} · Rank ${rank} of ${P.length}</p></div><p class="sub c">Waiting for the next question…</p>`;
- else app.innerHTML=`<h1 class="c">Game over</h1><div class="card c"><p class="sub">Your final rank</p><div class="big" style="letter-spacing:0">${rank}</div><p>of ${P.length} players · ${me.score||0} points</p></div><h3>Top players</h3>${lb(P,5)}<button class="btn" id="hm">Back to start</button>`;
+  <div class="card c"><p class="sub">Correct answers so far</p><div class="tm">${me.right||0} / ${qi+1}</div><p class="sub">+${me.last||0} speed points · Rank ${rank} of ${P.length}</p></div><p class="sub c">Waiting for the next question…</p>`;
+ else app.innerHTML=`<h1 class="c">Game over</h1><div class="card c"><p class="sub">You answered correctly</p><div class="big" style="letter-spacing:0">${me.right||0} / ${R.qs.length}</div><p>Rank ${rank} of ${P.length} players · ${me.score||0} speed points</p></div><h3>Top players</h3>${lb(P,5)}<button class="btn" id="hm">Back to start</button>`;
  const h=$("hm");if(h)h.onclick=home}
 (function resume(){
  if(!OK){home();return}
