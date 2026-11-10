@@ -1,0 +1,21 @@
+# Numbered format (use the same layout in a Word .docx or a .pdf file).
+1. The determinant of a triangular matrix is…
+A) The sum of the diagonal
+B) The product of the diagonal
+C) Always 0
+D) Always 1
+Answer: B
+
+2. If det A = 0 for a square matrix A, then A is…
+A) Invertible
+B) Singular (not invertible)
+C) Orthogonal
+D) Symmetric
+Answer: B
+
+3. The eigenvalues of [2 0; 0 −3] are…
+A) 2 and 3
+B) 2 and −3
+C) 0 and 1
+D) −2 and 3
+Answer: B

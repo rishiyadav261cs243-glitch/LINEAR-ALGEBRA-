@@ -147,8 +147,10 @@ function cover(){
 function home(){
  app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button>`+
  CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
+ `<button class="row" id="lq"><span class="dot"></span><span><span class="tt">Live quiz</span><small>Host or join a class quiz (needs internet)</small></span></button>`+
  (CHS.length<7?`<p class="sub">Chapters ${CHS.length+1} to 7 are coming soon.</p>`:"");
  app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>chap(CHS[+b.dataset.c]));
+ document.getElementById("lq").onclick=()=>{location.href="quiz.html"};
  const ib=document.getElementById("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}};
  scrollTo(0,0)}
 function chap(c){
