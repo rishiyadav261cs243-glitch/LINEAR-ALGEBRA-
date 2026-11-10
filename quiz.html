@@ -28,6 +28,7 @@ ol.lb{list-style:none;padding:0;margin:0}ol.lb li{display:flex;justify-content:s
 .res{font:800 44px system-ui;text-align:center;margin:10px 0}.res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
 .pod{display:flex;gap:10px;align-items:flex-end;margin:16px 0}.pod div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;overflow:hidden}
 .pod .p1{background:#3A3115;border-color:var(--hi);padding-top:30px}.pod .p2{padding-top:18px}
+.tb{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:8px 0 12px}.tb i{display:block;height:100%;width:100%;background:var(--hi)}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 </style></head><body><main id="app"></main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -97,7 +98,9 @@ function setup(){
  <p class="sub">Format: question | A | B | C | D | letter of the correct option.</p>
  <h3>Or upload a question file</h3><input type="file" id="fl" accept=".txt,.csv,.docx,.pdf,text/plain,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"><p class="sub" id="fi">Accepted: .txt, .csv, .docx (Word) and .pdf. Questions appear in the same order as the file.</p>
  <details class="sub"><summary>File format examples</summary><p>Format 1, numbered (best for Word and PDF):<br>1. What is 2 + 2?<br>A) 3<br>B) 4<br>C) 5<br>D) 6<br>Answer: B</p><p>Format 2, one line per question (best for .txt and .csv):<br>Question | A | B | C | D | B</p></details>
- <h3>Time per question</h3><select id="lim"><option value="15">15 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option><option value="45">45 seconds</option></select>
+ <h3>Time per question</h3><select id="lim"><option value="15">15 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option><option value="45">45 seconds</option><option value="60">1 minute</option><option value="120">2 minutes</option><option value="300">5 minutes</option></select>
+ <h3>Moving to the next question</h3><select id="au"><option value="auto">Automatic (after the answer screen)</option><option value="manual">Manual (I tap Next)</option></select>
+ <select id="pa"><option value="5">Answer screen shows for 5 seconds</option><option value="8" selected>Answer screen shows for 8 seconds</option><option value="12">Answer screen shows for 12 seconds</option><option value="20">Answer screen shows for 20 seconds</option></select>
  <button class="btn" id="mk">Create game</button><p class="err" id="se"></p></div>`;
  $("bk").onclick=home;$("mk").onclick=create;fileText="";
  $("fl").onchange=e=>{const f=e.target.files[0];if(!f)return;const info=$("fi");info.textContent="Reading "+f.name+"…";fileText="";
@@ -142,32 +145,40 @@ function parseBlocks(lines){const qs=[];let bad=0,cur=null;
  push();return{qs,bad}}
 function mk(q,o,a){const x=shuffle(o.map((t,i)=>({t,ok:i==a})));return{q,o:x.map(v=>v.t),a:x.findIndex(v=>v.ok)}}
 function create(){
- const src=$("src").value,nb=+$("nb").value,lim=+$("lim").value,er=$("se");let qs=[];
+ const src=$("src").value,nb=+$("nb").value,lim=+$("lim").value,auto=$("au").value=="auto",pause=+$("pa").value,er=$("se");let qs=[];
  if(!OK){er.textContent="Firebase is not set up yet.";return}
  if(src!="builtin"){const x=parseQ($("cu").value+"\n"+fileText);
   if(x.bad){er.textContent=x.bad+" line(s) have the wrong format.";return}qs=qs.concat(x.qs)}
  if(src!="custom")qs=qs.concat(shuffle(BANK.slice()).slice(0,Math.min(nb,BANK.length)).map(b=>mk(b[0],b[1],b[2])));
  if(!qs.length){er.textContent="Add at least one question.";return}
  const c=Array.from({length:5},()=>"ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*31)]).join("");
- db.ref("rooms/"+c).set({state:"lobby",qi:0,limit:lim,qs,created:firebase.database.ServerValue.TIMESTAMP}).then(()=>{code=c;role="host";listen()}).catch(()=>{er.textContent="Could not create the game. Check the database rules."})}
+ db.ref("rooms/"+c).set({state:"lobby",qi:0,limit:lim,auto,pause,qs,created:firebase.database.ServerValue.TIMESTAMP}).then(()=>{code=c;role="host";listen()}).catch(()=>{er.textContent="Could not create the game. Check the database rules."})}
 function listen(){
  ref=db.ref("rooms/"+code);
  ref.on("value",s=>{R=s.val();render()});
  clearInterval(tick);tick=setInterval(loop,300)}
+const fmt=s=>s>=60?Math.floor(s/60)+":"+String(s%60).padStart(2,"0"):s;
 const plist=()=>Object.entries((R&&R.players)||{}).map(([id,p])=>({id,...p})).sort((a,b)=>(b.right||0)-(a.right||0)||(b.score||0)-(a.score||0));
 function loop(){
  if(!R)return;
- const el=$("tm");if(el&&R.state=="q")el.textContent=Math.max(0,Math.ceil((R.limit*1000-(now()-R.qStart))/1000));
- if(role=="host"&&R.state=="q"&&!busy){
-  const A=(R.ans&&R.ans[R.qi])||{},np=Object.keys(R.players||{}).length;
-  if(now()-R.qStart>=R.limit*1000||(np&&Object.keys(A).length>=np))reveal()}}
+ const left=R.state=="q"?Math.max(0,R.limit*1000-(now()-R.qStart)):0;
+ const el=$("tm");if(el&&R.state=="q")el.textContent=fmt(Math.ceil(left/1000));
+ const tb=$("tbar");if(tb&&R.state=="q")tb.style.width=(left/(R.limit*1000)*100)+"%";
+ if(R.state=="reveal"&&R.auto){const nc=$("nc");
+  if(nc){const rem=Math.max(0,Math.ceil((R.pause*1000-(now()-R.revealAt))/1000));
+   nc.textContent=(R.qi+1<R.qs.length?"Next question":"Final results")+" in "+(isNaN(rem)?R.pause:rem)+" s"}}
+ if(role=="host"&&!busy){
+  if(R.state=="q"){
+   const A=(R.ans&&R.ans[R.qi])||{},np=Object.keys(R.players||{}).length;
+   if(now()-R.qStart>=R.limit*1000||(np&&Object.keys(A).length>=np))reveal()}
+  else if(R.state=="reveal"&&R.auto&&now()-R.revealAt>=R.pause*1000){busy=true;next();setTimeout(()=>{busy=false},700)}}}
 function reveal(){
  if(busy)return;busy=true;
  const qi=R.qi,q=R.qs[qi],lim=R.limit*1000,A=(R.ans&&R.ans[qi])||{},u={};
  Object.entries(R.players||{}).forEach(([id,p])=>{const a=A[id];let pts=0,ok=false;
   if(a&&a.c==q.a){ok=true;pts=Math.round(1000*(1-Math.min(a.t,lim)/lim/2))}
   u["players/"+id+"/score"]=(p.score||0)+pts;u["players/"+id+"/right"]=(p.right||0)+(ok?1:0);u["players/"+id+"/last"]=pts;u["players/"+id+"/ok"]=ok;u["players/"+id+"/pick"]=a?a.c:-1});
- u.state="reveal";ref.update(u).then(()=>{busy=false}).catch(()=>{busy=false})}
+ u.state="reveal";u.revealAt=firebase.database.ServerValue.TIMESTAMP;ref.update(u).then(()=>{busy=false}).catch(()=>{busy=false})}
 function next(){
  if(R.qi+1<R.qs.length)ref.update({state:"q",qi:R.qi+1,qStart:firebase.database.ServerValue.TIMESTAMP});
  else ref.update({state:"final"})}
@@ -178,7 +189,7 @@ function render(){
  if(!R){app.innerHTML=`<h2>Game ended</h2><p class="sub">This game is over or the code is no longer valid.</p><button class="btn" id="hm">Back to start</button>`;$("hm").onclick=home;return}
  role=="host"?hostView():playerView();loop()}
 function lb(P,n){const tot=R.state=="final"?R.qs.length:R.qi+1;return `<ol class="lb">${P.slice(0,n).map(p=>`<li><span>${esc(p.name)}</span><b>${p.right||0} / ${tot} correct</b></li>`).join("")}</ol>`}
-function qhead(){return `<div class="top"><span>Question ${R.qi+1} of ${R.qs.length}</span><span class="tm" id="tm">${R.limit}</span></div><p class="q">${esc(R.qs[R.qi].q)}</p>`}
+function qhead(){return `<div class="top"><span>Question ${R.qi+1} of ${R.qs.length}</span><span class="tm" id="tm">${fmt(R.limit)}</span></div><div class="tb"><i id="tbar"></i></div><p class="q">${esc(R.qs[R.qi].q)}</p>`}
 function hostView(){
  const P=plist(),q=R.qs[R.qi]||{},A=(R.ans&&R.ans[R.qi])||{};
  if(R.state=="lobby"){
@@ -197,7 +208,7 @@ function hostView(){
   const cnt=q.o.map((o,i)=>Object.values(A).filter(a=>a.c==i).length),mx=Math.max(1,...cnt),last=R.qi+1>=R.qs.length;
   app.innerHTML=`<p class="sub">Question ${R.qi+1} of ${R.qs.length}</p><p class="q">${esc(q.q)}</p>
   ${q.o.map((o,i)=>`<div class="row"><b>${L[i]}</b><span style="flex:1">${esc(o)}${i==q.a?" ✓":""}</span><i class="o${i}" style="width:${cnt[i]/mx*90}px"></i><span>${cnt[i]}</span></div>`).join("")}
-  <h3>Top players</h3>${lb(P,5)}<button class="btn" id="nx">${last?"Final results":"Next question"}</button>`;
+  <h3>Top players</h3>${lb(P,5)}<p class="sub" id="nc"></p><button class="btn" id="nx">${last?"Final results":"Next question"}${R.auto?" now":""}</button>`;
   $("nx").onclick=next}
  else{
   const t=P.slice(0,3);
@@ -210,12 +221,12 @@ function playerView(){
  if(!me){app.innerHTML=`<h2>You are not in this game</h2><button class="btn" id="hm">Back to start</button>`;$("hm").onclick=home;return}
  if(R.state=="lobby")app.innerHTML=`<div class="card c"><h2>You’re in, ${esc(me.name)}!</h2><p class="sub">Waiting for the host to start…</p><p>${P.length} player${P.length==1?"":"s"} joined</p></div>`;
  else if(R.state=="q"){
-  if(mine)app.innerHTML=`<div class="top"><span>Question ${qi+1} of ${R.qs.length}</span><span class="tm" id="tm">${R.limit}</span></div><div class="card c"><h2>Answer locked in</h2><p class="sub">You picked ${L[mine.c]}. Waiting for the others…</p></div>`;
+  if(mine)app.innerHTML=`<div class="top"><span>Question ${qi+1} of ${R.qs.length}</span><span class="tm" id="tm">${fmt(R.limit)}</span></div><div class="tb"><i id="tbar"></i></div><div class="card c"><h2>Answer locked in</h2><p class="sub">You picked ${L[mine.c]}. Waiting for the others…</p></div>`;
   else{app.innerHTML=qhead()+`<div class="grid">${q.o.map((o,i)=>`<button class="o o${i}" data-k="${i}">${L[i]}. ${esc(o)}</button>`).join("")}</div>`;
    app.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>answer(+b.dataset.k))}}
  else if(R.state=="reveal")app.innerHTML=`<p class="sub">Question ${qi+1} of ${R.qs.length}</p><div class="res ${me.ok?"ok":"bad"}">${me.ok?"Correct":me.pick<0?"Out of time":"Wrong"}</div>
   <div class="card c"><p class="sub">Correct answer</p><b>${L[q.a]}. ${esc(q.o[q.a])}</b></div>
-  <div class="card c"><p class="sub">Correct answers so far</p><div class="tm">${me.right||0} / ${qi+1}</div><p class="sub">+${me.last||0} speed points · Rank ${rank} of ${P.length}</p></div><p class="sub c">Waiting for the next question…</p>`;
+  <div class="card c"><p class="sub">Correct answers so far</p><div class="tm">${me.right||0} / ${qi+1}</div><p class="sub">+${me.last||0} speed points · Rank ${rank} of ${P.length}</p></div><p class="sub c" id="nc">${R.auto?"":"Waiting for the host to continue…"}</p>`;
  else app.innerHTML=`<h1 class="c">Game over</h1><div class="card c"><p class="sub">You answered correctly</p><div class="big" style="letter-spacing:0">${me.right||0} / ${R.qs.length}</div><p>Rank ${rank} of ${P.length} players · ${me.score||0} speed points</p></div><h3>Top players</h3>${lb(P,5)}<button class="btn" id="hm">Back to start</button>`;
  const h=$("hm");if(h)h.onclick=home}
 (function resume(){
