@@ -44,6 +44,7 @@ button:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-
 .cover .cq{font-style:italic;text-align:center;color:#D5DEF3;margin:0;padding:0 6px}
 .cover .btn{background:#F4B73F;color:#14213D;align-self:center;margin:0}
 .cover .cf{text-align:center;color:#B8C6E6;font:13px/1.4 system-ui,sans-serif;margin:0;border-top:1px solid #2B3A5E;padding-top:14px}
+select{width:100%;font:16px system-ui,sans-serif;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px}
 input[type=text],input[type=search]{width:100%;font:16px system-ui,sans-serif;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px}
 mark{background:var(--hi);color:#14213D;border-radius:3px;padding:0 2px}
 .tools .btn{margin:0 8px 10px 0;padding:9px 14px;font-size:14px}
@@ -132,7 +133,7 @@ const CHS=[{n:1,title:"Linear equations in linear algebra",sec:SEC,pr:PR,pb:CH,q
 ["C2","C3","C4","C5","C6","C7"].forEach(k=>{if(window[k])CHS.push(window[k])});
 let S={read:{},best:{}};try{const r=localStorage.getItem("la1");if(r)S=JSON.parse(r)}catch(e){}
 if(!S.read)S.read={};
-S.bm=S.bm||{};S.notes=S.notes||{};S.pref=S.pref||{theme:"auto",size:100};
+S.bm=S.bm||{};S.notes=S.notes||{};S.solved=S.solved||{};S.rev=S.rev||{};S.pref=S.pref||{theme:"auto",size:100};
 if(typeof S.best!=="object"||S.best===null)S.best=S.best==null?{}:{1:S.best};
 Object.keys(S.read).forEach(k=>{if(k.indexOf("-")<0){S.read["1-"+k]=S.read[k];delete S.read[k]}});
 const save=()=>{try{localStorage.setItem("la1",JSON.stringify(S))}catch(e){}};
@@ -186,6 +187,47 @@ function searchView(){
  $("sq").oninput=run;
  $("sr").onclick=e=>{const b=e.target.closest&&e.target.closest("[data-r]");if(!b)return;const h=HITS[+b.dataset.r];cur=h.d.c;if(h.d.kind=="Section")sec(h.d.i);else prac()};
  $("sq").focus&&$("sq").focus()}
+let PS={scope:"all",tag:"all",mode:"unsolved",last:null},ptick=null;
+const pStat=c=>{let d=0;c.pb.forEach((p,i)=>{if(S.solved[c.n+"-"+i])d++});return d};
+function practiceHome(){
+ clearInterval(ptick);
+ const tot=CHS.reduce((a,c)=>a+c.pb.length,0),done=CHS.reduce((a,c)=>a+pStat(c),0);
+ const tags=["Standard","Hard","Proof"].map(t=>{let n=0,d=0;CHS.forEach(c=>c.pb.forEach((p,i)=>{if(p[0]==t){n++;if(S.solved[c.n+"-"+i])d++}}));return t+" "+d+"/"+n}).join(" · ");
+ const rv=Object.keys(S.rev).length;
+ app.innerHTML=`<button class="back" id="bk">‹ Home</button><h2>Practice mode</h2>
+ <div class="card"><b>${done} of ${tot} challenge problems solved</b><div class="bar"><i style="width:${tot?done/tot*100:0}%"></i></div><p class="sub" style="margin:0">${tags}${rv?" · "+rv+" in review list":""}</p></div>
+ <h3>Difficulty</h3><select id="pt"><option value="all">All difficulties</option><option>Standard</option><option>Hard</option><option>Proof</option></select>
+ <h3>Which problems</h3><select id="ps"><option value="unsolved">Unsolved only</option><option value="review">My review list</option><option value="all">Everything</option></select>
+ <h3>Pick a chapter, then you get a random problem</h3>
+ <button class="row" data-pc="all"><span class="dot"></span><span><span class="tt">Mixed, all chapters</span><small>${done} of ${tot} solved</small></span></button>`+
+ CHS.map((c,i)=>`<button class="row" data-pc="${i}"><span class="dot ${pStat(c)==c.pb.length&&c.pb.length?"ok":""}">${pStat(c)==c.pb.length&&c.pb.length?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${pStat(c)} of ${c.pb.length} solved</small></span></button>`).join("");
+ $("bk").onclick=home;
+ app.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{PS={scope:b.dataset.pc=="all"?"all":+b.dataset.pc,tag:$("pt").value,mode:$("ps").value,last:null};pnext()});scrollTo(0,0)}
+function ppool(){const pool=[];(PS.scope=="all"?CHS:[CHS[PS.scope]]).forEach(c=>c.pb.forEach((p,i)=>{const k=c.n+"-"+i;
+ if(PS.tag!="all"&&p[0]!=PS.tag)return;
+ if(PS.mode=="unsolved"&&S.solved[k])return;
+ if(PS.mode=="review"&&!S.rev[k])return;
+ pool.push({c,i,k,p})}));return pool}
+function pnext(){
+ clearInterval(ptick);const pool=ppool();
+ if(!pool.length){
+  app.innerHTML=`<button class="back" id="bk">‹ Practice</button><div class="card c"><h2>${PS.mode=="review"?"Your review list is empty":"Nothing left in this set"}</h2><p class="sub">${PS.mode=="unsolved"?"You have solved every problem here. Great work!":PS.mode=="review"?"Tap Review later on a problem to add it.":"There are no problems for this choice."}</p><button class="btn alt" id="bk2">Back to practice</button></div>`;
+  $("bk").onclick=practiceHome;$("bk2").onclick=practiceHome;return}
+ let it=pool[Math.floor(Math.random()*pool.length)];
+ if(pool.length>1)while(it.k==PS.last)it=pool[Math.floor(Math.random()*pool.length)];
+ PS.last=it.k;pshow(it,pool.length)}
+function pshow(it,n){
+ const {c,i,k,p}=it,col={Standard:"var(--mute)",Hard:"var(--hi)",Proof:"var(--acc)"}[p[0]];
+ app.innerHTML=`<button class="back" id="bk">‹ Practice</button><div style="display:flex;justify-content:space-between;align-items:center"><span class="sub" style="margin:0">Chapter ${c.n} · ${n} in this set</span><b id="pt2" style="font-family:system-ui">0:00</b></div>
+ <div class="card" style="margin-top:10px"><span class="tt" style="font-size:12.5px;font-weight:700;color:${col}">${p[0]} · Problem ${i+1}</span><p style="margin:8px 0 0;font-size:1.1em"><b>${esc(p[1])}</b></p></div>
+ <p class="sub">Work it out on paper first. Solutions are not included yet.</p>
+ <button class="btn" id="ok">${S.solved[k]?"✓ Solved (tap to undo)":"I solved it"}</button><button class="btn alt" id="rv">${S.rev[k]?"★ In review list":"☆ Review later"}</button>
+ <button class="btn alt" id="nx">Next random problem</button><button class="btn alt" id="op">Open chapter notes</button>`;
+ $("bk").onclick=practiceHome;
+ $("ok").onclick=e=>{S.solved[k]=!S.solved[k];if(!S.solved[k])delete S.solved[k];save();e.target.textContent=S.solved[k]?"✓ Solved (tap to undo)":"I solved it"};
+ $("rv").onclick=e=>{S.rev[k]=!S.rev[k];if(!S.rev[k])delete S.rev[k];save();e.target.textContent=S.rev[k]?"★ In review list":"☆ Review later"};
+ $("nx").onclick=pnext;$("op").onclick=()=>chap(c);
+ const t0=Date.now();ptick=setInterval(()=>{const e=$("pt2");if(!e){clearInterval(ptick);return}const x=Math.floor((Date.now()-t0)/1000);e.textContent=Math.floor(x/60)+":"+String(x%60).padStart(2,"0")},1000);scrollTo(0,0)}
 function cover(){
  let m="";for(let r=0;r<3;r++)for(let c=0;c<3;c++)m+=`<i class="${r==c?"on":""}">${r==c?1:0}</i>`;
  app.innerHTML=`<div class="cover"><div><div class="rule"></div><h1 class="ct">Linear algebra<br>for engineers</h1><p class="ca">Rishi Yadav</p><p class="cs">Student at NITK</p></div>
@@ -195,13 +237,13 @@ function cover(){
  <p class="cf">National Institute of Technology Karnataka, Surathkal</p></div>`;
  document.getElementById("open").onclick=home;scrollTo(0,0)}
 function home(){
- app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button><div class="tools"><button class="btn alt" id="tsr">Search</button><button class="btn alt" id="tsv">Saved</button><button class="btn alt" id="tst">Settings</button></div>`+
+ app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button><div class="tools"><button class="btn alt" id="tpr">Practice</button><button class="btn alt" id="tsr">Search</button><button class="btn alt" id="tsv">Saved</button><button class="btn alt" id="tst">Settings</button></div>`+
  CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
  `<button class="row" id="lq"><span class="dot"></span><span><span class="tt">Live quiz</span><small>Host or join a class quiz (needs internet)</small></span></button>`+
  (CHS.length<7?`<p class="sub">Chapters ${CHS.length+1} to 7 are coming soon.</p>`:"");
  app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>chap(CHS[+b.dataset.c]));
  document.getElementById("lq").onclick=()=>{location.href="quiz.html"};
- document.getElementById("tsr").onclick=searchView;document.getElementById("tsv").onclick=saved;document.getElementById("tst").onclick=settings;
+ document.getElementById("tpr").onclick=practiceHome;document.getElementById("tsr").onclick=searchView;document.getElementById("tsv").onclick=saved;document.getElementById("tst").onclick=settings;
  const ib=document.getElementById("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}};
  scrollTo(0,0)}
 function chap(c){
@@ -229,8 +271,9 @@ function prac(){
  app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>Practice problems</h2><h3>Worked examples</h3><p class="sub">Try on paper first, then open the solution.</p>`+
  cur.pr.map((p,i)=>`<div class="card"><b>${i+1}. ${p[0]}</b><details><summary>Solution</summary><div class="ans">${p[1]}</div></details></div>`).join("")+
  (cur.pb.length?`<h3>Challenge set · ${cur.pb.length} problems</h3><p class="sub">Standard, Hard and Proof problems. Solutions are not included yet.</p>`+
- cur.pb.map((p,i)=>`<div class="card"><span class="tt" style="font-size:12.5px;font-weight:700;color:${tg[p[0]]}">${p[0]}</span><br><b>${i+1}. ${p[1]}</b></div>`).join(""):"");
- document.getElementById("bk").onclick=()=>chap(cur);scrollTo(0,0)}
+ cur.pb.map((p,i)=>`<div class="card"><span class="tt" style="font-size:12.5px;font-weight:700;color:${tg[p[0]]}">${p[0]}</span><br><b>${i+1}. ${p[1]}</b><br><button class="btn alt" data-ps="${i}" style="padding:7px 12px;font-size:13px;margin:10px 0 0">${S.solved[cur.n+"-"+i]?"✓ Solved":"Mark solved"}</button></div>`).join(""):"");
+ document.getElementById("bk").onclick=()=>chap(cur);
+ app.querySelectorAll("[data-ps]").forEach(b=>b.onclick=()=>{const k=cur.n+"-"+b.dataset.ps;S.solved[k]=!S.solved[k];if(!S.solved[k])delete S.solved[k];save();b.textContent=S.solved[k]?"✓ Solved":"Mark solved"});scrollTo(0,0)}
 function test(){
  const QZ=cur.qz,SB=cur.sb;let q=QZ.map(()=>-1),m=SB.map(()=>-1),fin=false;
  app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>Chapter ${cur.n} test</h2><p class="sub">20 marks. Part A quiz: 8 marks (40%). Part B subjective: 12 marks (60%).</p><h3>Part A · Quiz (2 marks each)</h3>`+
