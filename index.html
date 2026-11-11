@@ -48,6 +48,26 @@ select{width:100%;font:16px system-ui,sans-serif;background:var(--card);color:va
 input[type=text],input[type=search]{width:100%;font:16px system-ui,sans-serif;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px}
 mark{background:var(--hi);color:#14213D;border-radius:3px;padding:0 2px}
 .tools .btn{margin:0 8px 10px 0;padding:9px 14px;font-size:14px}
+
+.ttsel{display:flex;gap:8px;flex-wrap:wrap}.ttsel select{flex:1 1 150px;margin:0 0 10px}
+.chips{display:flex;gap:6px;margin:4px 0 10px}.chip{flex:1;font:700 14px system-ui,sans-serif;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;position:relative}
+.chip.on{background:var(--acc);color:var(--accT);border-color:var(--acc)}.chip.td::after{content:"";position:absolute;top:4px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--hi)}
+.ttsum{border-left:5px solid var(--hi)}.ttsum b{font-family:system-ui,sans-serif}
+.ttb{border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin:0 0 9px;background:var(--card);font-family:system-ui,sans-serif}
+.ttb .ttt{font-size:13px;color:var(--mute);display:flex;justify-content:space-between;align-items:center}
+.ttc{border-left:6px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--card))}
+.ttc .ttn{font-weight:700;font-size:16px;line-height:1.3;margin-top:2px}.ttc .tts{font-size:13.5px;color:var(--mute)}
+.ttc.live{box-shadow:0 0 0 2px var(--c)}.past{opacity:.5}
+.ttf,.ttl{background:transparent;border-style:dashed;padding:7px 13px}.ttf .ttx,.ttl .ttx{font-size:14px;color:var(--mute)}
+.tg{font:800 11px system-ui;padding:2px 7px;border-radius:99px;color:#fff;letter-spacing:.4px}.tg.now{background:var(--bad)}.tg.nxt{background:var(--acc);color:var(--accT)}
+.ttw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.ttab{border-collapse:collapse;min-width:820px;width:100%;font-family:system-ui,sans-serif;font-size:12.5px;text-align:center}
+.ttab th,.ttab td{border:1px solid var(--line);padding:7px 4px}.ttab th{background:var(--bg);font-size:13px}.ttab th small{display:block;font-weight:500;color:var(--mute);font-size:10.5px;white-space:nowrap}
+.ttab .stk{position:sticky;left:0;z-index:2;background:var(--bg);min-width:48px}
+.ttab td.tc{background:color-mix(in srgb,var(--c) 20%,var(--card));border-bottom:3px solid var(--c)}.ttab td.tc b{display:block;font-size:12.5px}.ttab td.tc small{display:block;font-size:10px;color:var(--mute)}
+.ttab td.fr{color:var(--mute)}.ttab td.lun{background:var(--bg);color:var(--mute);font-weight:700;letter-spacing:2px;width:34px}
+.ttab tr.tdy .stk{background:var(--hi);color:#14213D}.ttab tr.tdy td.fr{background:color-mix(in srgb,var(--hi) 12%,var(--card))}
+.lg{display:flex;gap:8px;align-items:baseline;padding:3px 0;font-family:system-ui,sans-serif;font-size:13.5px}.lg i{flex:none;width:10px;height:10px;border-radius:3px;background:var(--c)}.lg b{flex:none;min-width:104px}.lg span{color:var(--mute)}
 </style></head><body><main id="app"></main>
 <script type="text/plain" id="lab-src"><!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -485,7 +505,8 @@ function cover(){
  <p class="cf">National Institute of Technology Karnataka, Surathkal</p></div>`;
  document.getElementById("open").onclick=home;scrollTo(0,0)}
 function home(){
- app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button><div class="tools"><button class="btn alt" id="tpr">Practice</button><button class="btn alt" id="tsr">Search</button><button class="btn alt" id="tsv">Saved</button><button class="btn alt" id="tst">Settings</button></div>`+
+ app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button><div class="tools"><button class="btn alt" id="tpr">Practice</button><button class="btn alt" id="tsr">Search</button><button class="btn alt" id="tsv">Saved</button><button class="btn alt" id="tst">Settings</button><button class="btn alt" id="ttb">Timetable</button></div>`+
+ `<button class="row" id="ttr"><span class="dot">🗓</span><span><span class="tt">Timetable</span><small>${(()=>{const t=ttTodayIdx(),sc=ttSec();return t<0?"Weekend · tap to see the week":"Today: "+ttCount(sc,t)+" class"+(ttCount(sc,t)==1?"":"es")+" · Section "+TT_SEC[sc].name+" · day-wise and weekly table"})()}</small></span></button>`+
  CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
  `<button class="row" id="lq"><span class="dot"></span><span><span class="tt">Live quiz</span><small>Host or join a class quiz (needs internet)</small></span></button>`+
  `<button class="row" id="lb"><span class="dot"></span><span><span class="tt">Matrix lab</span><small>Transform 2×2 and 3×3 matrices, solve step by step</small></span></button>`+
@@ -496,7 +517,7 @@ function home(){
  const openEmbed=id=>{const f=document.createElement("iframe");f.style.cssText="position:fixed;inset:0;width:100%;height:100%;border:0;z-index:50;background:#10131c";f.title="Embedded tool";f.srcdoc=document.getElementById(id).textContent.replace(/<\\\/script>/g,"<"+"/script>");document.body.appendChild(f);window.cricketFrame=f};
  document.getElementById("ck").onclick=()=>openEmbed("cricket-src");
  document.getElementById("lb").onclick=()=>openEmbed("lab-src");
- document.getElementById("tpr").onclick=practiceHome;document.getElementById("tsr").onclick=searchView;document.getElementById("tsv").onclick=saved;document.getElementById("tst").onclick=settings;
+ document.getElementById("tpr").onclick=practiceHome;document.getElementById("tsr").onclick=searchView;document.getElementById("tsv").onclick=saved;document.getElementById("tst").onclick=settings;document.getElementById("ttb").onclick=()=>ttView();document.getElementById("ttr").onclick=()=>ttView();
  const ib=document.getElementById("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}};
  scrollTo(0,0)}
 function chap(c){
@@ -543,5 +564,114 @@ function test(){
   const r=document.getElementById("res");r.innerHTML=`<div class="card"><div class="score">${t} / 20</div><p>Quiz ${a}/8 · Subjective ${b}/12${m.includes(-1)?"<br>Award yourself marks for every subjective answer to complete your score.":""}</p></div>`;r.scrollIntoView({behavior:"smooth"})};
  scrollTo(0,0)}
 addEventListener("message",e=>{if(e.data==="cricket-back"&&window.cricketFrame){window.cricketFrame.remove();window.cricketFrame=null}});
+/* ===== TIMETABLE (NITK Surathkal, Aug–Nov 2026, Chemistry Cycle) ===== */
+const TT_T=[[480,525],[540,585],[600,645],[660,705],[720,765],[780,825],[840,885],[900,945],[960,1005],[1020,1065]];
+const TT_DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
+const TT_SEC={S14:{name:"S14 · CSE",room:"LHC-D CR-5.4"},S15:{name:"S15 · IT",room:"LHC-D CR-5.5"}};
+const TT_S={
+ CY100N:{n:"Engineering Chemistry",c:"#1E8E5A"},
+ MA103N:{n:"Engineering Mathematics",c:"#2447D6"},
+ UC100N:{n:"Data Science and AI",c:"#B04FC2"},
+ DE100N:{n:"Design Thinking and Prototyping",c:"#6B4FD1"},
+ UC103N:{n:"Indian Knowledge System",c:"#C2443A",room:"LHC C Seminar Hall"},
+ PL110N:{code:"PL110N / PL119N",n:"Introduction to Physical Activities 1 / NCC – Physical Activity 1",c:"#C77D12"},
+ PL120N:{code:"PL120N / PL129N",n:"Introduction to Cultural Activities 1 / NCC – Cultural Activity 1",c:"#C77D12"},
+ PL130N:{code:"PL130N / PL139N",n:"Introduction to Technical Activities 1 / NCC – Technical Activity 1",c:"#C77D12"},
+ PL140N:{code:"PL140N",n:"Professional Communication 1",c:"#0E8FA3"},
+ PL149N:{code:"PL149N",n:"NCC – Professional Communication 1",c:"#0E8FA3"}
+};
+/* entry = [startPeriod, numberOfPeriods, subjectKey, "lab"?, batch?] */
+const TT_D={
+ S14:[
+  [[2,1,"UC100N"],[3,1,"CY100N"],[4,1,"MA103N"],[6,2,"DE100N"],[9,2,"PL110N"]],
+  [[3,2,"CY100N","lab","B1"],[6,2,"DE100N","lab"],[9,2,"PL120N"]],
+  [[2,1,"MA103N"],[3,1,"CY100N"],[4,1,"UC100N"],[6,2,"CY100N","lab","B2"],[8,1,"UC103N"],[9,2,"PL130N"]],
+  [[3,1,"CY100N"],[4,1,"MA103N"],[9,2,"UC103N"]],
+  [[3,2,"PL140N"],[6,2,"UC100N","lab"],[9,2,"PL149N"]]
+ ],
+ S15:[
+  [[2,1,"MA103N"],[3,1,"UC100N"],[4,1,"CY100N"],[6,2,"DE100N"],[9,2,"PL110N"]],
+  [[1,2,"PL140N"],[3,1,"MA103N"],[4,1,"CY100N"],[6,2,"CY100N","lab","B1"],[9,2,"PL120N"]],
+  [[3,2,"CY100N","lab","B2"],[8,1,"UC103N"],[9,2,"PL130N"]],
+  [[2,1,"UC100N"],[3,1,"CY100N"],[4,1,"MA103N"],[7,2,"DE100N","lab"],[9,2,"UC103N"]],
+  [[3,2,"UC100N","lab"],[9,2,"PL149N"]]
+ ]
+};
+const ttFm=m=>{const h=Math.floor(m/60),mm=m%60;return (h%12||12)+":"+String(mm).padStart(2,"0")+" "+(h>=12?"PM":"AM")};
+const ttCode=k=>TT_S[k].code||k;
+function ttTodayIdx(){const g=new Date().getDay();return g==0||g==6?-1:g-1}
+function ttSec(){return TT_SEC[S.ttSec]?S.ttSec:"S14"}
+function ttEntries(sec,d){return TT_D[sec][d].filter(e=>!(e[3]=="lab"&&e[4]&&S.ttB&&S.ttB!="both"&&e[4]!=S.ttB))}
+function ttBlocks(sec,d){
+ const E=ttEntries(sec,d),out=[];let p=1;
+ while(p<=10){
+  if(p==5){out.push({k:"lunch",a:720,b:765});p++;continue}
+  const e=E.find(x=>x[0]==p);
+  if(e){out.push({k:"cls",e,a:TT_T[p-1][0],b:TT_T[p+e[1]-2][1]});p+=e[1]}
+  else{let q=p;while(q+1<=10&&q+1!=5&&!E.find(x=>x[0]==q+1))q++;out.push({k:"free",a:TT_T[p-1][0],b:TT_T[q-1][1]});p=q+1}
+ }
+ return out}
+const ttCount=(sec,d)=>ttBlocks(sec,d).filter(b=>b.k=="cls").length;
+function ttTitle(e){const s=TT_S[e[2]];return s.n+(e[3]=="lab"?" (Lab)":"")}
+function ttSub(e,sec){const s=TT_S[e[2]];let t=ttCode(e[2]);if(e[3]=="lab")t+=" · Lab"+(e[4]?" · Batch "+e[4]:"");
+ if(e[3]!="lab"){const r=s.room||(e[2].startsWith("PL")?"":TT_SEC[sec].room);if(r)t+=" · "+r}return t}
+let TT={d:null,mode:null};
+function ttView(keep){
+ const sec=ttSec(),ti=ttTodayIdx();
+ if(!keep||TT.d==null){TT.d=TT.d==null?(ti<0?0:ti):TT.d}
+ if(!TT.mode)TT.mode=S.ttMode||"day";
+ const y=scrollY,now=new Date(),nm=now.getHours()*60+now.getMinutes();
+ let body="";
+ if(TT.mode=="day"){
+  const d=TT.d,isT=d==ti,bl=ttBlocks(sec,d);
+  let nextIdx=-1;if(isT)nextIdx=bl.findIndex(b=>b.k=="cls"&&b.a>nm&&!bl.some(c=>c.k=="cls"&&nm>=c.a&&nm<c.b&&false));
+  let sum="";
+  if(ti<0&&!keep||ti<0&&d==0&&false)sum="";
+  if(isT){
+   const cur=bl.find(b=>b.k=="cls"&&nm>=b.a&&nm<b.b),nx=bl.find(b=>b.k=="cls"&&b.a>nm),n=ttCount(sec,d);
+   sum=`<div class="card ttsum"><b>${cur?"Now: "+ttTitle(cur.e):nx?"Next: "+ttTitle(nx.e):n?"All classes done for today 🎉":"No classes today 🎉"}</b>
+   <div class="sub" style="margin:2px 0 0">${cur?ttCode(cur.e[2])+" · until "+ttFm(cur.b)+(nx?" · then "+ttTitle(nx.e)+" at "+ttFm(nx.a):""):nx?ttCode(nx.e[2])+" · starts "+ttFm(nx.a)+" · "+ttSub(nx.e,sec).split(" · ").slice(-1)[0]:n+" class"+(n==1?"":"es")+" today"}</div></div>`;
+  }else if(ti<0&&d==0){sum=`<div class="card ttsum"><b>It's the weekend 🎉</b><div class="sub" style="margin:2px 0 0">Showing Monday's classes.</div></div>`}
+  body=sum+`<p class="sub" style="margin:4px 0 10px">${TT_DAYS[d]} · ${ttCount(sec,d)} class${ttCount(sec,d)==1?"":"es"}</p>`+
+  bl.map((b,i)=>{
+   const tm=ttFm(b.a)+" – "+ttFm(b.b),live=isT&&nm>=b.a&&nm<b.b,past=isT&&nm>=b.b;
+   if(b.k=="lunch")return `<div class="ttb ttl${past?" past":""}"><div class="ttt">${tm}</div><div class="ttx">🍽 Lunch break</div></div>`;
+   if(b.k=="free")return `<div class="ttb ttf${past?" past":""}"><div class="ttt">${tm}</div><div class="ttx">Free</div></div>`;
+   const s=TT_S[b.e[2]],isN=isT&&i==bl.findIndex(x=>x.k=="cls"&&x.a>nm)&&!bl.some(x=>x.k=="cls"&&nm>=x.a&&nm<x.b);
+   return `<div class="ttb ttc${live?" live":""}${past?" past":""}" style="--c:${s.c}"><div class="ttt">${tm}${live?'<span class="tg now">NOW</span>':isN?'<span class="tg nxt">NEXT</span>':""}</div>
+   <div class="ttn">${ttTitle(b.e)}</div><div class="tts">${ttSub(b.e,sec)}</div></div>`}).join("");
+ }else{
+  let h=`<tr><th class="stk">Day</th>`+TT_T.map((t,i)=>`<th>${i+1}<small>${ttFm(t[0]).replace(" AM","").replace(" PM","")}–${ttFm(t[1]).replace(" AM","").replace(" PM","")}</small></th>`).join("").replace(/(<th>5<small>[^<]*<\/small><\/th>)/,"$1");
+  h+=`</tr>`;
+  let rows="";
+  for(let r=0;r<5;r++){
+   const E=ttEntries(sec,r);let tr=`<tr class="${r==ti?"tdy":""}"><th class="stk">${TT_DAYS[r].slice(0,3).toUpperCase()}</th>`;
+   for(let p=1;p<=10;p++){
+    if(p==5){if(r==0)tr+=`<td class="lun" rowspan="5">L<br>U<br>N<br>C<br>H</td>`;continue}
+    const e=E.find(x=>x[0]==p);
+    if(e){const s=TT_S[e[2]];tr+=`<td class="tc" colspan="${e[1]}" style="--c:${s.c}"><b>${ttCode(e[2])}</b>${e[3]=="lab"?"<small>LAB"+(e[4]?" · "+e[4]:"")+"</small>":""}</td>`;p+=e[1]-1}
+    else if(!E.some(x=>p>x[0]&&p<x[0]+x[1]))tr+=`<td class="fr">·</td>`;
+   }
+   rows+=tr+`</tr>`}
+  body=`<div class="ttw"><table class="ttab"><thead>${h}</thead><tbody>${rows}</tbody></table></div>
+  <p class="sub" style="font-size:13px;margin:6px 0 0">Swipe sideways to see all periods. Today's row is highlighted.</p>`;
+ }
+ const used=[...new Set(TT_D[sec].flat().map(e=>e[2]))];
+ const leg=`<h3>Subject codes</h3><div class="card" style="padding:10px 14px">`+used.map(k=>`<div class="lg" style="--c:${TT_S[k].c}"><i></i><b>${ttCode(k)}</b><span>${TT_S[k].n}</span></div>`).join("")+`</div><p class="sub" style="font-size:13px">* UC103N is held in LHC C Seminar Hall. Session: August 2026 – November 2026 · Chemistry Cycle.</p>`;
+ const chips=TT_DAYS.map((n,i)=>`<button class="chip${TT.d==i?" on":""}${i==ti?" td":""}" data-d="${i}">${n.slice(0,3)}</button>`).join("");
+ app.innerHTML=`<div id="ttroot"><button class="back" id="bk">‹ Home</button><h2>Timetable</h2>
+ <div class="ttsel"><select id="tsec" aria-label="Section">${Object.keys(TT_SEC).map(k=>`<option value="${k}"${k==sec?" selected":""}>Section ${TT_SEC[k].name}</option>`).join("")}</select>
+ <select id="tbt" aria-label="Chemistry lab batch"><option value="both"${!S.ttB||S.ttB=="both"?" selected":""}>Both lab batches</option><option value="B1"${S.ttB=="B1"?" selected":""}>My batch: B1</option><option value="B2"${S.ttB=="B2"?" selected":""}>My batch: B2</option></select></div>
+ <div class="tools"><button class="btn${TT.mode=="day"?"":" alt"}" id="md">Day-wise</button><button class="btn${TT.mode=="week"?"":" alt"}" id="mw">Weekly table</button></div>
+ ${TT.mode=="day"?`<div class="chips">${chips}</div>`:""}${body}${leg}</div>`;
+ $("bk").onclick=()=>{clearInterval(window.ttI);TT.mode=null;home()};
+ $("tsec").onchange=e=>{S.ttSec=e.target.value;save();ttView(true)};
+ $("tbt").onchange=e=>{S.ttB=e.target.value;save();ttView(true)};
+ $("md").onclick=()=>{TT.mode="day";S.ttMode="day";save();ttView(true)};
+ $("mw").onclick=()=>{TT.mode="week";S.ttMode="week";save();ttView(true)};
+ app.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{TT.d=+b.dataset.d;ttView(true)});
+ clearInterval(window.ttI);window.ttI=setInterval(()=>{if($("ttroot")){const yy=scrollY;ttView(true);scrollTo(0,yy)}else clearInterval(window.ttI)},60000);
+ scrollTo(0,keep?y:0)}
+
 applyPref();cover();
 </script></body></html>
