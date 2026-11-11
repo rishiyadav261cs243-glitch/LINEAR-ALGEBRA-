@@ -49,6 +49,135 @@ input[type=text],input[type=search]{width:100%;font:16px system-ui,sans-serif;ba
 mark{background:var(--hi);color:#14213D;border-radius:3px;padding:0 2px}
 .tools .btn{margin:0 8px 10px 0;padding:9px 14px;font-size:14px}
 </style></head><body><main id="app"></main>
+<script type="text/plain" id="lab-src"><!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Matrix Lab</title>
+<style>
+:root{--bg:#f6f7fb;--fg:#1a2233;--card:#fff;--ac:#4f46e5;--mut:#667085;--ln:#d8dce6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131c;--fg:#e8ebf4;--card:#181c28;--ac:#8b93ff;--mut:#9aa3b8;--ln:#2a3042}}
+:root[data-theme="dark"]{--bg:#10131c;--fg:#e8ebf4;--card:#181c28;--ac:#8b93ff;--mut:#9aa3b8;--ln:#2a3042}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:8px 14px 40px;max-width:520px;margin:auto}
+#bk{display:inline-block;padding:8px 0;font-weight:600;color:var(--ac);text-decoration:none}
+h1{margin:2px 0 10px;font-size:24px}
+#tabs{display:flex;gap:6px;margin-bottom:12px}
+button{font:inherit;border:1px solid var(--ln);background:var(--card);color:var(--fg);border-radius:10px;padding:8px 12px;cursor:pointer}
+button:focus-visible,input:focus-visible,#bk:focus-visible{outline:3px solid var(--ac);outline-offset:1px}
+#tabs button{flex:1;font-weight:600}
+button.on,button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+canvas{display:block;width:100%;max-width:360px;aspect-ratio:1;margin:0 auto 10px;border:1px solid var(--ln);border-radius:14px;background:var(--card);touch-action:none}
+.mg{display:grid;gap:6px;margin:10px auto;max-width:300px}
+.mg input{width:100%;box-sizing:border-box;padding:10px 4px;text-align:center;font:inherit;border:1px solid var(--ln);border-radius:8px;background:var(--card);color:var(--fg)}
+.hd{text-align:center;font-weight:700;color:var(--mut)}
+.pr{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}
+.pr button{padding:6px 10px;font-size:13px}
+.ro{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin:8px 0}
+.h{color:var(--mut);font-size:13px;margin:6px 2px}
+.st{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin:10px 0;overflow-x:auto}
+.mx{border-collapse:collapse;margin-top:6px}.mx td{padding:5px 11px;text-align:right;font-variant-numeric:tabular-nums}.mx td.sp{border-left:2px solid var(--fg)}
+.an{border:2px solid var(--ac)}
+[hidden]{display:none!important}
+</style></head><body>
+<a id="bk" href="#" onclick="parent.postMessage('cricket-back','*');return false">‹ Back to notes</a>
+<h1>Matrix Lab</h1>
+<div id="tabs" role="tablist"></div>
+<section id="p2"><canvas id="c2" aria-label="2 by 2 matrix transformation"></canvas>
+<div class="pr" id="pr2"></div><div class="mg" id="g2"></div><div class="ro" id="r2"></div>
+<p class="h">Drag the red and blue arrow tips. Each column of the matrix is where an arrow lands. The shaded square is the unit square after the transformation, and green dashed lines are eigenvectors.</p></section>
+<section id="p3" hidden><canvas id="c3" aria-label="3 by 3 matrix transformation"></canvas>
+<div class="pr" id="pr3"></div><div class="mg" id="g3"></div><div class="ro" id="r3"></div>
+<p class="h">Drag the picture to rotate the view. The thin cube is the original, the bold cube is after the matrix. Red, green and blue arrows are where x, y and z land.</p></section>
+<section id="ps" hidden><div class="pr"><button id="n2">2 variables</button><button id="n3">3 variables</button></div>
+<div class="mg" id="gs" style="max-width:380px"></div>
+<div class="pr"><button class="pri" id="sv">Solve step by step</button></div><div id="out"></div>
+<p class="h">Type whole numbers, decimals or fractions like 1/2. Each row is one equation.</p></section>
+<script>
+const $=i=>document.getElementById(i),css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim(),r2=n=>+n.toFixed(2);
+function mk(el,cols,vals,pre,cb,head){el.style.gridTemplateColumns='repeat('+cols+',1fr)';el.innerHTML='';
+ if(head)head.forEach(h=>{const s=document.createElement('span');s.className='hd';s.textContent=h;el.appendChild(s)});
+ vals.forEach((v,i)=>{const n=document.createElement('input');n.value=v;n.id=pre+i;n.autocomplete='off';n.setAttribute('aria-label','entry '+(i+1));if(cb)n.oninput=cb;el.appendChild(n)})}
+const val=(p,k)=>{const v=parseFloat($(p+k).value);return isNaN(v)?0:v};
+function pres(el,list,pre,fn){el.innerHTML='';list.forEach(([n,v])=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{v.forEach((t,i)=>$(pre+i).value=t);fn()};el.appendChild(b)})}
+function ln(x,p,q){x.beginPath();x.moveTo(p[0],p[1]);x.lineTo(q[0],q[1]);x.stroke()}
+function arr(x,p,q,col){x.strokeStyle=col;x.fillStyle=col;x.lineWidth=3;x.setLineDash([]);ln(x,p,q);const t=Math.atan2(q[1]-p[1],q[0]-p[0]);x.beginPath();x.moveTo(q[0],q[1]);x.lineTo(q[0]-11*Math.cos(t-.4),q[1]-11*Math.sin(t-.4));x.lineTo(q[0]-11*Math.cos(t+.4),q[1]-11*Math.sin(t+.4));x.fill()}
+function cv(id){const c=$(id);c.width=c.height=720;const x=c.getContext('2d');x.scale(2,2);return x}
+const X2=cv('c2'),X3=cv('c3');
+const pt=(e,c)=>{const k=c.getBoundingClientRect();return[(e.clientX-k.left)/k.width*360,(e.clientY-k.top)/k.height*360]};
+/* ---------- 2x2 ---------- */
+function draw2(){const x=X2,S=360,u=30,o=180,a=val('a',0),b=val('a',1),c=val('a',2),d=val('a',3),f=css('--fg'),ac=css('--ac');
+ const Q=(p,q)=>[o+p*u,o-q*u],P=(p,q)=>Q(a*p+b*q,c*p+d*q);
+ x.clearRect(0,0,S,S);x.setLineDash([]);
+ x.strokeStyle=f;x.globalAlpha=.12;x.lineWidth=1;for(let k=-6;k<=6;k++){ln(x,Q(k,-6),Q(k,6));ln(x,Q(-6,k),Q(6,k))}
+ x.globalAlpha=.4;x.lineWidth=1.5;ln(x,Q(-6,0),Q(6,0));ln(x,Q(0,-6),Q(0,6));
+ x.strokeStyle=ac;x.globalAlpha=.5;x.lineWidth=1;for(let k=-6;k<=6;k++){ln(x,P(k,-6),P(k,6));ln(x,P(-6,k),P(6,k))}
+ x.globalAlpha=.28;x.fillStyle=ac;x.beginPath();[[0,0],[1,0],[1,1],[0,1]].forEach(([p,q],i)=>{const z=P(p,q);i?x.lineTo(z[0],z[1]):x.moveTo(z[0],z[1])});x.fill();
+ x.globalAlpha=1;
+ const tr=a+d,det=a*d-b*c,dc=tr*tr/4-det;let ev;
+ if(dc>=-1e-9){const s=Math.sqrt(Math.max(0,dc)),L=[tr/2+s,tr/2-s];ev='Eigenvalues: '+r2(L[0])+(s>1e-9?', '+r2(L[1]):'');
+  x.setLineDash([6,5]);x.strokeStyle='#16a34a';x.lineWidth=2;
+  (s>1e-9?L:[L[0]]).forEach(l=>{let v=Math.abs(b)>1e-9?[b,l-a]:Math.abs(c)>1e-9?[l-d,c]:Math.abs(l-a)<1e-9?[1,0]:[0,1];const m=Math.hypot(v[0],v[1])||1;v=[v[0]/m*9,v[1]/m*9];ln(x,Q(-v[0],-v[1]),Q(v[0],v[1]))});x.setLineDash([])}
+ else ev='Eigenvalues: '+r2(tr/2)+' ± '+r2(Math.sqrt(-dc))+'i (rotation-type map, no real eigenvectors)';
+ arr(x,Q(0,0),Q(a,c),'#ef4444');arr(x,Q(0,0),Q(b,d),'#3b82f6');
+ [[a,c,'#ef4444'],[b,d,'#3b82f6']].forEach(([p,q,col])=>{x.strokeStyle=col;x.lineWidth=2;const z=Q(p,q);x.beginPath();x.arc(z[0],z[1],9,0,7);x.stroke()});
+ $('r2').innerHTML='<b>det = '+r2(det)+'</b> · trace = '+r2(tr)+'<br>'+ev+'<br>'+(Math.abs(det)<1e-9?'Singular: the plane collapses onto a line or a point, so it cannot be undone.':'Areas scale by ×'+r2(Math.abs(det))+(det<0?' and the picture is flipped like a mirror.':'.'))}
+let dg=null;const c2=$('c2');
+c2.onpointerdown=e=>{const[p,q]=pt(e,c2),a=[val('a',0),val('a',2)],b=[val('a',1),val('a',3)],d1=Math.hypot(180+a[0]*30-p,180-a[1]*30-q),d2=Math.hypot(180+b[0]*30-p,180-b[1]*30-q);if(Math.min(d1,d2)<30){dg=d1<d2?0:1;c2.setPointerCapture(e.pointerId)}};
+c2.onpointermove=e=>{if(dg===null)return;const[p,q]=pt(e,c2),cl=v=>Math.max(-5,Math.min(5,Math.round(v*20)/20));$('a'+(dg?1:0)).value=cl((p-180)/30);$('a'+(dg?3:2)).value=cl((180-q)/30);draw2()};
+c2.onpointerup=c2.onpointercancel=()=>dg=null;
+/* ---------- 3x3 ---------- */
+let yaw=.7,pit=.45;
+function rank(M){M=M.map(r=>r.slice());let r=0;for(let c=0;c<M[0].length&&r<M.length;c++){let p=r;for(let i=r;i<M.length;i++)if(Math.abs(M[i][c])>Math.abs(M[p][c]))p=i;if(Math.abs(M[p][c])<1e-9)continue;[M[r],M[p]]=[M[p],M[r]];for(let i=r+1;i<M.length;i++){const k=M[i][c]/M[r][c];for(let j=c;j<M[0].length;j++)M[i][j]-=k*M[r][j]}r++}return r}
+function draw3(){const x=X3,o=180,u=46,m=[0,1,2,3,4,5,6,7,8].map(i=>val('m',i)),f=css('--fg'),ac=css('--ac');
+ const T=p=>[0,1,2].map(i=>m[3*i]*p[0]+m[3*i+1]*p[1]+m[3*i+2]*p[2]);
+ const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
+ const V=p=>{const a=p[0]*cy-p[1]*sy,b=p[0]*sy+p[1]*cy;return[o+a*u,o-(b*sp+p[2]*cp)*u]};
+ x.clearRect(0,0,360,360);x.setLineDash([]);
+ const vs=[0,1,2,3,4,5,6,7].map(i=>[i&1,i>>1&1,i>>2&1]);
+ const cube=(mp,col,al,w)=>{x.strokeStyle=col;x.globalAlpha=al;x.lineWidth=w;vs.forEach((p,i)=>[1,2,4].forEach(bt=>{if(!(i&bt))ln(x,V(mp(p)),V(mp(vs[i|bt])))}))};
+ cube(p=>p,f,.28,1);cube(T,ac,.95,2.2);
+ [[[1,0,0],'#ef4444'],[[0,1,0],'#16a34a'],[[0,0,1],'#3b82f6']].forEach(([e,col])=>{x.globalAlpha=.3;x.strokeStyle=f;x.lineWidth=1;ln(x,V([0,0,0]),V(e.map(k=>k*2.5)));x.globalAlpha=1;arr(x,V([0,0,0]),V(T(e)),col)});
+ x.globalAlpha=1;
+ const det=m[0]*(m[4]*m[8]-m[5]*m[7])-m[1]*(m[3]*m[8]-m[5]*m[6])+m[2]*(m[3]*m[7]-m[4]*m[6]),rk=rank([[m[0],m[1],m[2]],[m[3],m[4],m[5]],[m[6],m[7],m[8]]]);
+ $('r3').innerHTML='<b>det = '+r2(det)+'</b> · trace = '+r2(m[0]+m[4]+m[8])+' · rank = '+rk+'<br>'+(rk===3?'Volumes scale by ×'+r2(Math.abs(det))+(det<0?' and space is mirrored.':'.'):'Singular: space is squashed flat into '+(rk===2?'a plane':rk===1?'a line':'a single point')+', so it cannot be undone.')}
+let rd=null;const c3=$('c3');
+c3.onpointerdown=e=>{rd=[e.clientX,e.clientY];c3.setPointerCapture(e.pointerId)};
+c3.onpointermove=e=>{if(!rd)return;yaw+=(e.clientX-rd[0])*.01;pit=Math.max(-1.5,Math.min(1.5,pit+(e.clientY-rd[1])*.01));rd=[e.clientX,e.clientY];draw3()};
+c3.onpointerup=c3.onpointercancel=()=>rd=null;
+/* ---------- solver (exact fractions) ---------- */
+const g=(a,b)=>b?g(b,a%b):Math.abs(a),F=(n,d=1)=>{if(d<0){n=-n;d=-d}const k=g(n,d)||1;return{n:n/k,d:d/k}};
+const add=(a,b)=>F(a.n*b.d+b.n*a.d,a.d*b.d),mul=(a,b)=>F(a.n*b.n,a.d*b.d),sub=(a,b)=>add(a,F(-b.n,b.d)),dv=(a,b)=>F(a.n*b.d,a.d*b.n),z0=a=>a.n===0,fs=a=>a.d===1?''+a.n:a.n+'/'+a.d;
+function parse(s){s=s.trim();if(!s)return F(0);if(s.includes('/')){const[p,q]=s.split('/'),n=+p,d=+q;return(isNaN(n)||isNaN(d)||!d)?null:F(n,d)}if(isNaN(+s))return null;const k=(s.split('.')[1]||'').length;return F(Math.round(+s*Math.pow(10,k)),Math.pow(10,k))}
+const SB=['₁','₂','₃'],VN=['x','y','z'];let nv=3;
+function sgrid(){const ex=nv===3?['1','1','1','6','0','2','5','-4','2','5','-1','27']:['2','1','5','1','-1','1'];mk($('gs'),nv+1,ex,'s',null,VN.slice(0,nv).concat(['= b']));$('n2').className=nv===2?'on':'';$('n3').className=nv===3?'on':'';$('out').innerHTML=''}
+const tbl=M=>'<table class="mx">'+M.map(r=>'<tr>'+r.map((v,j)=>'<td'+(j===nv?' class="sp"':'')+'>'+fs(v)+'</td>').join('')+'</tr>').join('')+'</table>';
+function expr(rhs,terms){let s=z0(rhs)?'':fs(rhs);terms.forEach(([k,nm])=>{if(z0(k))return;const neg=k.n<0,ab=F(Math.abs(k.n),k.d),co=(ab.n===1&&ab.d===1)?'':fs(ab);s+=(neg?(s?' − ':'−'):(s?' + ':''))+co+nm});return s||'0'}
+function solve(){const n=nv,M=[];for(let i=0;i<n;i++){M.push([]);for(let j=0;j<=n;j++){const v=parse($('s'+(i*(n+1)+j)).value);if(!v){$('out').innerHTML='<div class="st">Please check row '+(i+1)+': every box needs a number or a fraction like 1/2.</div>';return}M[i].push(v)}}
+ const steps=[['Start with the augmented matrix',M.map(r=>r.slice())]];
+ const snap=t=>steps.push([t,M.map(r=>r.slice())]);let r=0;const piv=[];
+ for(let c=0;c<n&&r<n;c++){let p=-1;for(let i=r;i<n;i++)if(!z0(M[i][c])){p=i;break}
+  if(p<0)continue;
+  if(p!==r){[M[r],M[p]]=[M[p],M[r]];snap('Swap R'+SB[r]+' ↔ R'+SB[p]+' to get a nonzero pivot')}
+  const pv=M[r][c];if(!(pv.n===1&&pv.d===1)){M[r]=M[r].map(v=>dv(v,pv));snap('R'+SB[r]+' → R'+SB[r]+' ÷ '+fs(pv)+' to make the pivot 1')}
+  for(let i=0;i<n;i++)if(i!==r&&!z0(M[i][c])){const k=M[i][c];M[i]=M[i].map((v,j)=>sub(v,mul(k,M[r][j])));snap('R'+SB[i]+' → R'+SB[i]+' − ('+fs(k)+')·R'+SB[r]+' to clear column '+(c+1))}
+  piv.push(c);r++}
+ let bad=false;for(let i=0;i<n;i++)if(M[i].slice(0,n).every(z0)&&!z0(M[i][n]))bad=true;
+ let h=steps.map((s,i)=>'<div class="st"><b>'+(i?'Step '+i+': ':'')+s[0]+'</b>'+tbl(s[1])+'</div>').join(''),ans;
+ if(bad)ans='<b>No solution.</b> One row says 0 = a nonzero number, so the equations contradict each other.';
+ else if(piv.length===n)ans='<b>Unique solution</b><br>'+VN.slice(0,n).map((v,i)=>v+' = '+fs(M[i][n])).join('<br>');
+ else{const fr=[];for(let c=0;c<n;c++)if(!piv.includes(c))fr.push(c);
+  ans='<b>Infinitely many solutions</b> ('+fr.map(c=>VN[c]).join(', ')+' can be any number)<br>'+piv.map((pc,i)=>VN[pc]+' = '+expr(M[i][n],fr.map(c=>[F(-M[i][c].n,M[i][c].d),VN[c]]))).join('<br>')}
+ $('out').innerHTML=h+'<div class="st an">'+ans+'</div>'}
+$('n2').onclick=()=>{nv=2;sgrid()};$('n3').onclick=()=>{nv=3;sgrid()};$('sv').onclick=solve;
+/* ---------- setup ---------- */
+mk($('g2'),2,[2,1,1,2],'a',draw2);mk($('g3'),3,[1,.6,0,0,1,0,0,0,1.5],'m',draw3);sgrid();
+const s2=Math.SQRT1_2.toFixed(3),s3=Math.SQRT1_2.toFixed(3);
+pres($('pr2'),[['Identity',[1,0,0,1]],['Rotate 45°',[s2,'-'+s2,s2,s2]],['Stretch',[2,0,0,.5]],['Shear',[1,1,0,1]],['Mirror',[1,0,0,-1]],['Flatten',[1,1,1,1]]],'a',draw2);
+pres($('pr3'),[['Identity',[1,0,0,0,1,0,0,0,1]],['Scale',[2,0,0,0,1,0,0,0,.5]],['Spin 45°',[s3,'-'+s3,0,s3,s3,0,0,0,1]],['Shear',[1,.6,0,0,1,.6,0,0,1]],['Mirror',[1,0,0,0,1,0,0,0,-1]],['Flatten',[1,0,0,0,1,0,0,0,0]]],'m',draw3);
+const TB=[['p2','2×2 Lab',draw2],['p3','3×3 Lab',draw3],['ps','Solver',()=>{}]];
+TB.forEach(([id,t,fn])=>{const b=document.createElement('button');b.textContent=t;b.id='t'+id;b.setAttribute('role','tab');b.onclick=()=>{TB.forEach(([i])=>{$(i).hidden=i!==id;$('t'+i).className=i===id?'on':''});fn()};$('tabs').appendChild(b)});
+$('tp2').onclick();
+<\/script></body></html>
+</script>
 <script type="text/plain" id="cricket-src"><!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -359,11 +488,14 @@ function home(){
  app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button><div class="tools"><button class="btn alt" id="tpr">Practice</button><button class="btn alt" id="tsr">Search</button><button class="btn alt" id="tsv">Saved</button><button class="btn alt" id="tst">Settings</button></div>`+
  CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
  `<button class="row" id="lq"><span class="dot"></span><span><span class="tt">Live quiz</span><small>Host or join a class quiz (needs internet)</small></span></button>`+
+ `<button class="row" id="lb"><span class="dot"></span><span><span class="tt">Matrix lab</span><small>Transform 2×2 and 3×3 matrices, solve step by step</small></span></button>`+
  `<button class="row" id="ck"><span class="dot"></span><span><span class="tt">Cricket break</span><small>A quick batting game to relax</small></span></button>`+
  (CHS.length<7?`<p class="sub">Chapters ${CHS.length+1} to 7 are coming soon.</p>`:"");
  app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>chap(CHS[+b.dataset.c]));
  document.getElementById("lq").onclick=()=>{location.href="quiz.html"};
- document.getElementById("ck").onclick=()=>{const f=document.createElement("iframe");f.style.cssText="position:fixed;inset:0;width:100%;height:100%;border:0;z-index:50;background:#0d1710";f.title="Cricket game";f.srcdoc=document.getElementById("cricket-src").textContent.replace(/<\\\/script>/g,"<"+"/script>");document.body.appendChild(f);window.cricketFrame=f};
+ const openEmbed=id=>{const f=document.createElement("iframe");f.style.cssText="position:fixed;inset:0;width:100%;height:100%;border:0;z-index:50;background:#10131c";f.title="Embedded tool";f.srcdoc=document.getElementById(id).textContent.replace(/<\\\/script>/g,"<"+"/script>");document.body.appendChild(f);window.cricketFrame=f};
+ document.getElementById("ck").onclick=()=>openEmbed("cricket-src");
+ document.getElementById("lb").onclick=()=>openEmbed("lab-src");
  document.getElementById("tpr").onclick=practiceHome;document.getElementById("tsr").onclick=searchView;document.getElementById("tsv").onclick=saved;document.getElementById("tst").onclick=settings;
  const ib=document.getElementById("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}};
  scrollTo(0,0)}
