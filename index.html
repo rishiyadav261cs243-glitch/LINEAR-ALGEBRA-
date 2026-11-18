@@ -13,7 +13,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;color:var(--ink);font:17px/1.65 Georgia,"Times New Roman",serif}
-main{max-width:660px;margin:0 auto;padding:20px 16px 56px}
+main{max-width:660px;margin:0 auto;padding:20px 16px 110px}
 h1,h2,h3,.btn,.opt,.tt,summary,.mk{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 h1{font-size:28px;line-height:1.2;margin:8px 0 4px}h2{font-size:22px;margin:4px 0 12px;line-height:1.25}h3{font-size:16px;margin:22px 0 6px}
 .sub{color:var(--mute);margin:0 0 14px}
@@ -68,7 +68,18 @@ mark{background:var(--hi);color:#14213D;border-radius:3px;padding:0 2px}
 .ttab td.fr{color:var(--mute)}.ttab td.lun{background:var(--bg);color:var(--mute);font-weight:700;letter-spacing:2px;width:34px}
 .ttab tr.tdy .stk{background:var(--hi);color:#14213D}.ttab tr.tdy td.fr{background:color-mix(in srgb,var(--hi) 12%,var(--card))}
 .lg{display:flex;gap:8px;align-items:baseline;padding:3px 0;font-family:system-ui,sans-serif;font-size:13.5px}.lg i{flex:none;width:10px;height:10px;border-radius:3px;background:var(--c)}.lg b{flex:none;min-width:104px}.lg span{color:var(--mute)}
-</style></head><body><main id="app"></main>
+
+#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+#tabbar[hidden]{display:none}
+#tabbar button{flex:1;background:none;border:0;color:var(--mute);font:600 11px system-ui,sans-serif;padding:4px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:10px}
+#tabbar button span{font-size:21px;line-height:1}
+#tabbar button.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.hd2{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.ib{display:flex;gap:6px;flex:none;margin-top:6px}
+.ib button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:17px;cursor:pointer}
+button.dot{background:var(--card);padding:0;cursor:pointer;color:var(--ink)}button.dot.ok{background:var(--ok);color:#fff}
+.hero{text-align:center;padding:28px 16px}.hero .em{font-size:54px;line-height:1.2}
+</style></head><body><main id="app"></main><nav id="tabbar" hidden aria-label="Main tabs"></nav>
 <script type="text/plain" id="lab-src"><!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -503,25 +514,66 @@ function cover(){
  <p class="cq">“Every hard problem becomes simpler once you find the right basis.”</p>
  <button class="btn" id="open">Open the book</button>
  <p class="cf">National Institute of Technology Karnataka, Surathkal</p></div>`;
- document.getElementById("open").onclick=home;scrollTo(0,0)}
+ document.getElementById("open").onclick=home;$("tabbar").hidden=true;scrollTo(0,0)}
+const TABS=[["maths","📐","Maths"],["quiz","📝","Quiz"],["lab","🧮","Lab"],["cricket","🏏","Cricket"],["other","📚","Other"]];
+function navSet(){const n=$("tabbar");n.hidden=false;n.innerHTML=TABS.map(t=>`<button data-tb="${t[0]}" class="${(S.tab||"maths")==t[0]?"on":""}" aria-label="${t[2]}"><span>${t[1]}</span>${t[2]}</button>`).join("");
+ n.querySelectorAll("[data-tb]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tb;save();home()})}
+const mt=()=>{S.tab="maths";navSet()};
+const hdr=(t,sub)=>`<div class="hd2"><div><h1>${t}</h1><p class="sub">${sub}</p></div><div class="ib"><button id="hs" aria-label="Search">🔍</button><button id="hv" aria-label="Bookmarks and notes">★</button><button id="hg" aria-label="Settings">⚙️</button></div></div>`;
+const hdrWire=()=>{$("hs").onclick=searchView;$("hv").onclick=saved;$("hg").onclick=settings};
+const ttCard=()=>{const t=ttTodayIdx(),sc=ttSec();return `<button class="row" id="ttr"><span class="dot">🗓</span><span><span class="tt">Timetable</span><small>${t<0?"Weekend · tap to see the week":"Today: "+ttCount(sc,t)+" class"+(ttCount(sc,t)==1?"":"es")+" · Section "+TT_SEC[sc].name+" · day-wise and weekly"}</small></span></button>`};
+const ttWire=()=>{const b=$("ttr");if(b)b.onclick=()=>ttView()};
+const openEmbed=id=>{const f=document.createElement("iframe");f.style.cssText="position:fixed;inset:0;width:100%;height:100%;border:0;z-index:50;background:#10131c";f.title="Embedded tool";f.srcdoc=document.getElementById(id).textContent.replace(/<\\\/script>/g,"<"+"/script>");document.body.appendChild(f);window.cricketFrame=f};
 function home(){
- app.innerHTML=`<h1>Linear Algebra</h1><p class="sub">B.Tech semester 1 · notes, proofs, problems and tests</p><button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button><div class="tools"><button class="btn alt" id="tpr">Practice</button><button class="btn alt" id="tsr">Search</button><button class="btn alt" id="tsv">Saved</button><button class="btn alt" id="tst">Settings</button><button class="btn alt" id="ttb">Timetable</button></div>`+
- `<button class="row" id="ttr"><span class="dot">🗓</span><span><span class="tt">Timetable</span><small>${(()=>{const t=ttTodayIdx(),sc=ttSec();return t<0?"Weekend · tap to see the week":"Today: "+ttCount(sc,t)+" class"+(ttCount(sc,t)==1?"":"es")+" · Section "+TT_SEC[sc].name+" · day-wise and weekly table"})()}</small></span></button>`+
- CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
- `<button class="row" id="lq"><span class="dot"></span><span><span class="tt">Live quiz</span><small>Host or join a class quiz (needs internet)</small></span></button>`+
- `<button class="row" id="lb"><span class="dot"></span><span><span class="tt">Matrix lab</span><small>Transform 2×2 and 3×3 matrices, solve step by step</small></span></button>`+
- `<button class="row" id="ck"><span class="dot"></span><span><span class="tt">Cricket break</span><small>A quick batting game to relax</small></span></button>`+
- (CHS.length<7?`<p class="sub">Chapters ${CHS.length+1} to 7 are coming soon.</p>`:"");
- app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>chap(CHS[+b.dataset.c]));
- document.getElementById("lq").onclick=()=>{location.href="quiz.html"};
- const openEmbed=id=>{const f=document.createElement("iframe");f.style.cssText="position:fixed;inset:0;width:100%;height:100%;border:0;z-index:50;background:#10131c";f.title="Embedded tool";f.srcdoc=document.getElementById(id).textContent.replace(/<\\\/script>/g,"<"+"/script>");document.body.appendChild(f);window.cricketFrame=f};
- document.getElementById("ck").onclick=()=>openEmbed("cricket-src");
- document.getElementById("lb").onclick=()=>openEmbed("lab-src");
- document.getElementById("tpr").onclick=practiceHome;document.getElementById("tsr").onclick=searchView;document.getElementById("tsv").onclick=saved;document.getElementById("tst").onclick=settings;document.getElementById("ttb").onclick=()=>ttView();document.getElementById("ttr").onclick=()=>ttView();
- const ib=document.getElementById("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}};
+ navSet();const t=S.tab||"maths";
+ if(t=="quiz")quizTab();else if(t=="lab")launch("🧮","Matrix Lab","Visualise and solve","Transform 2×2 and 3×3 matrices with draggable vectors, see determinant and eigenvalues, and solve systems step by step.","lab-src","Open Matrix Lab");
+ else if(t=="cricket")launch("🏏","Cricket break","A quick game to relax","A 3-over super over. Tap as the ball reaches the bat to score runs. Good for a short break between topics.","cricket-src","Start playing");
+ else if(t=="other")otherTab();else mathsTab();
  scrollTo(0,0)}
+function mathsTab(){
+ const tot=CHS.reduce((a,c)=>a+c.sec.length,0),rd=Object.keys(S.read).filter(k=>S.read[k]).length;
+ app.innerHTML=hdr("Linear Algebra","B.Tech semester 1 · notes, proofs, problems")+`<button class="btn" id="inst" ${dp?"":"hidden"}>Install app</button>`+ttCard()+
+ `<div class="bar"><i style="width:${tot?rd/tot*100:0}%"></i></div><p class="sub">${rd} of ${tot} sections read</p>`+
+ `<button class="row" id="tpr"><span class="dot">✎</span><span><span class="tt">Practice mode</span><small>Random challenge problems · timer · review list</small></span></button><h3>Chapters</h3>`+
+ CHS.map((c,i)=>{const n=c.sec.filter((s,j)=>S.read[c.n+"-"+j]).length,ok=n==c.sec.length&&S.best[c.n]!=null;return `<button class="row" data-c="${i}"><span class="dot ${ok?"ok":""}">${ok?"✓":""}</span><span><span class="tt">Chapter ${c.n} · ${c.title}</span><small>${n} of ${c.sec.length} sections read${S.best[c.n]!=null?" · best test "+S.best[c.n]+"/20":""}</small></span></button>`}).join("")+
+ (CHS.length<7?`<p class="sub">Chapters ${CHS.length+1} to 7 are coming soon.</p>`:"");
+ hdrWire();ttWire();$("tpr").onclick=practiceHome;
+ app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>chap(CHS[+b.dataset.c]));
+ const ib=$("inst");ib.onclick=()=>{if(dp){dp.prompt();dp=null;ib.hidden=true}}}
+function quizTab(){
+ app.innerHTML=hdr("Quiz","Test yourself")+
+ `<button class="row" id="lq"><span class="dot">📡</span><span><span class="tt">Live quiz</span><small>Host or join a class quiz (needs internet)</small></span></button><h3>Chapter tests</h3><p class="sub">20 marks each: quiz 40%, subjective 60%.</p>`+
+ CHS.map((c,i)=>{const b=S.best[c.n];return `<button class="row" data-qt="${i}"><span class="dot ${b!=null?"ok":""}">${b!=null?"✓":""}</span><span><span class="tt">Chapter ${c.n} test</span><small>${c.title}${b!=null?" · best "+b+"/20":""}</small></span></button>`}).join("");
+ hdrWire();$("lq").onclick=()=>{location.href="quiz.html"};
+ app.querySelectorAll("[data-qt]").forEach(b=>b.onclick=()=>{cur=CHS[+b.dataset.qt];test()})}
+function launch(em,title,sub,desc,src,btn){
+ app.innerHTML=hdr(title,sub)+`<div class="card hero"><div class="em">${em}</div><p>${desc}</p><button class="btn" id="go">${btn}</button></div>`;
+ hdrWire();$("go").onclick=()=>openEmbed(src)}
+const SUBJ=[["UC100N","📊"],["CY100N","🧪"],["UC103N","📜"],["DE100N","💡"]];
+function otherTab(){
+ S.subj=S.subj||{};const sc=ttSec();
+ app.innerHTML=hdr("Other subjects","Data Science and AI, Chemistry, IKS, Design Thinking")+ttCard()+`<h3>Subjects</h3>`+
+ SUBJ.map(([k,ic])=>{const d=S.subj[k],open=d?d.todo.filter(t=>!t.d).length:0,cl=TT_D[sc].reduce((a,es)=>a+es.filter(e=>e[2]==k&&!(e[3]=="lab")).length,0);
+  return `<button class="row" data-sb="${k}" style="border-left:5px solid ${TT_S[k].c}"><span class="dot" style="border:0;font-size:22px">${ic}</span><span><span class="tt">${TT_S[k].n}</span><small>${TT_S[k].code||k} · ${cl} lecture${cl==1?"":"s"}/week${open?" · "+open+" task"+(open==1?"":"s")+" open":""}</small></span></button>`}).join("");
+ hdrWire();ttWire();
+ app.querySelectorAll("[data-sb]").forEach(b=>b.onclick=()=>subjView(b.dataset.sb))}
+function subjView(k){
+ const s=TT_S[k],sc=ttSec();S.subj=S.subj||{};const d=S.subj[k]=S.subj[k]||{notes:"",todo:[]},sl=[];
+ TT_D[sc].forEach((es,di)=>ttEntries(sc,di).filter(e=>e[2]==k).forEach(e=>sl.push(TT_DAYS[di].slice(0,3)+" · "+ttFm(TT_T[e[0]-1][0])+" – "+ttFm(TT_T[e[0]+e[1]-2][1])+(e[3]=="lab"?" · Lab"+(e[4]?" · Batch "+e[4]:""):" · "+(s.room||TT_SEC[sc].room)))));
+ app.innerHTML=`<button class="back" id="bk">‹ Other subjects</button><h2>${s.n}</h2><p class="sub">${s.code||k} · Section ${TT_SEC[sc].name}</p>
+ <h3>Weekly schedule</h3><div class="card" style="border-left:5px solid ${s.c}">${sl.length?sl.map(x=>`<div>${x}</div>`).join(""):"No classes for this section."}</div>
+ <h3>Tasks and assignments</h3><div id="td"></div><div style="display:flex;gap:8px;align-items:flex-start"><input type="text" id="ti" placeholder="Add a task…" style="margin:0"><button class="btn" id="ta" style="margin:0">Add</button></div>
+ <h3>My notes</h3><textarea id="sn" rows="7" placeholder="Notes, links, formulas, project ideas…">${esc(d.notes)}</textarea>`;
+ const rt=()=>{$("td").innerHTML=d.todo.length?d.todo.map((t,i)=>`<div class="row" style="cursor:default"><button class="dot ${t.d?"ok":""}" data-t="${i}" aria-label="Toggle done">${t.d?"✓":""}</button><span style="flex:1;${t.d?"text-decoration:line-through;color:var(--mute)":""}">${esc(t.t)}</span><button class="back" data-x="${i}" aria-label="Delete task">✕</button></div>`).join(""):`<p class="sub">No tasks yet.</p>`;
+  $("td").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{const t=d.todo[+b.dataset.t];t.d=!t.d;save();rt()});
+  $("td").querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{d.todo.splice(+b.dataset.x,1);save();rt()})};
+ rt();
+ const add=()=>{const v=$("ti").value.trim();if(!v)return;d.todo.push({t:v,d:false});$("ti").value="";save();rt()};
+ $("ta").onclick=add;$("ti").onkeydown=e=>{if(e.key=="Enter")add()};
+ $("sn").oninput=e=>{d.notes=e.target.value;save()};
+ $("bk").onclick=()=>{S.tab="other";home()};scrollTo(0,0)}
 function chap(c){
- cur=c;const n=c.sec.filter((s,i)=>S.read[rk(i)]).length,b=S.best[c.n];
+ cur=c;mt();const n=c.sec.filter((s,i)=>S.read[rk(i)]).length,b=S.best[c.n];
  app.innerHTML=`<button class="back" id="bk">‹ All chapters</button><h1>Chapter ${c.n}</h1><p class="sub">${c.title}</p>
  <div class="bar"><i style="width:${n/c.sec.length*100}%"></i></div><p class="sub">${n} of ${c.sec.length} sections read${b!=null?" · best test score "+b+"/20":""}</p>`+
  c.sec.map((s,i)=>`<button class="row" data-s="${i}"><span class="dot ${S.read[rk(i)]?"ok":""}">${S.read[rk(i)]?"✓":""}</span><span><span class="tt">${s[0]}${S.bm[rk(i)]?" ★":""}${S.notes[rk(i)]?" ✎":""}</span><small>${s[1]}</small></span></button>`).join("")+
@@ -531,7 +583,7 @@ function chap(c){
  app.querySelectorAll("[data-s]").forEach(x=>x.onclick=()=>sec(+x.dataset.s));
  document.getElementById("pr").onclick=prac;document.getElementById("ts").onclick=test;scrollTo(0,0)}
 function sec(i){
- const s=cur.sec[i],k=rk(i);
+ mt();const s=cur.sec[i],k=rk(i);
  app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>${s[0]}</h2>${s[2]}
  <h3>My note</h3><textarea id="nt" rows="4" placeholder="Write your own note for this section…">${esc(S.notes[k]||"")}</textarea>
  <button class="btn" id="mk">${S.read[k]?"Marked as read ✓":"Mark as read"}</button><button class="btn alt" id="bmk">${S.bm[k]?"★ Bookmarked":"☆ Bookmark"}</button>${i<cur.sec.length-1?'<button class="btn alt" id="nx">Next section</button>':""}`;
@@ -541,7 +593,7 @@ function sec(i){
  $("nt").oninput=e=>{const v=e.target.value;if(v.trim())S.notes[k]=v;else delete S.notes[k];save()};
  const nx=$("nx");if(nx)nx.onclick=()=>sec(i+1);scrollTo(0,0)}
 function prac(){
- const tg={Standard:"var(--mute)",Hard:"var(--hi)",Proof:"var(--acc)"};
+ mt();const tg={Standard:"var(--mute)",Hard:"var(--hi)",Proof:"var(--acc)"};
  app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>Practice problems</h2><h3>Worked examples</h3><p class="sub">Try on paper first, then open the solution.</p>`+
  cur.pr.map((p,i)=>`<div class="card"><b>${i+1}. ${p[0]}</b><details><summary>Solution</summary><div class="ans">${p[1]}</div></details></div>`).join("")+
  (cur.pb.length?`<h3>Challenge set · ${cur.pb.length} problems</h3><p class="sub">Standard, Hard and Proof problems. Solutions are not included yet.</p>`+
@@ -550,12 +602,12 @@ function prac(){
  app.querySelectorAll("[data-ps]").forEach(b=>b.onclick=()=>{const k=cur.n+"-"+b.dataset.ps;S.solved[k]=!S.solved[k];if(!S.solved[k])delete S.solved[k];save();b.textContent=S.solved[k]?"✓ Solved":"Mark solved"});scrollTo(0,0)}
 function test(){
  const QZ=cur.qz,SB=cur.sb;let q=QZ.map(()=>-1),m=SB.map(()=>-1),fin=false;
- app.innerHTML=`<button class="back" id="bk">‹ Chapter ${cur.n}</button><h2>Chapter ${cur.n} test</h2><p class="sub">20 marks. Part A quiz: 8 marks (40%). Part B subjective: 12 marks (60%).</p><h3>Part A · Quiz (2 marks each)</h3>`+
+ app.innerHTML=`<button class="back" id="bk">‹ ${S.tab=="quiz"?"Quiz":"Chapter "+cur.n}</button><h2>Chapter ${cur.n} test</h2><p class="sub">20 marks. Part A quiz: 8 marks (40%). Part B subjective: 12 marks (60%).</p><h3>Part A · Quiz (2 marks each)</h3>`+
  QZ.map((x,i)=>`<div class="card"><b>${i+1}. ${x[0]}</b>${x[1].map((o,k)=>`<button class="opt" data-q="${i}" data-k="${k}">${o}</button>`).join("")}</div>`).join("")+
  `<h3>Part B · Subjective (4 marks each)</h3>`+
  SB.map((x,i)=>`<div class="card"><b>${i+1}. ${x[0]}</b><textarea rows="4" placeholder="Write your answer here or on paper"></textarea><details><summary>Model answer</summary><div class="ans">${x[1]}</div></details><div>Marks you award yourself:</div>${[0,1,2,3,4].map(k=>`<button class="mk" data-m="${i}" data-k="${k}">${k}</button>`).join("")}</div>`).join("")+
  `<button class="btn" id="fn">Finish test</button><div id="res"></div>`;
- document.getElementById("bk").onclick=()=>chap(cur);
+ document.getElementById("bk").onclick=()=>S.tab=="quiz"?home():chap(cur);
  app.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{if(fin)return;const i=+b.dataset.q;q[i]=+b.dataset.k;app.querySelectorAll(`[data-q="${i}"]`).forEach(x=>x.classList.toggle("sel",x===b))});
  app.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const i=+b.dataset.m;m[i]=+b.dataset.k;app.querySelectorAll(`[data-m="${i}"]`).forEach(x=>x.classList.toggle("sel",x===b))});
  document.getElementById("fn").onclick=()=>{
